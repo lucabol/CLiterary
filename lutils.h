@@ -6,14 +6,11 @@
 #include <stdbool.h>
 
 #ifdef __GNUC__
-// It should really be an attribute 'unused' on each function, so as not to disable it for all translation unit
-#pragma GCC diagnostic ignored "-Wunused-function"
-// Needs nested functions and block expressions
 
- static inline void __autofree(void *p) {
+static inline void __autofree(void *p) {
      void **_p = (void**)p;
      free(*_p);
- }
+}
 
 static inline G_GNUC_PURE bool str_empty(const char* str) {return str[0] == '\0';}
 
@@ -95,11 +92,18 @@ typedef struct alg {                                                            
         NULL;                                                                    \
     })
 
-#define g_assert_e(expr) (                                                          \
-    (G_LIKELY (!expr) ?                                                             \
-       (void)g_assertion_message_expr (G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
-                                                 #expr)                             \
-    : (void) 1) )
+#define g_assert_e(...)                                                              \
+    ({                                                                               \
+        g_assert(__VA_ARGS__);                                                       \
+        NULL;                                                                        \
+    })
+
+#define g_assert_no_match g_assert_e("Should never get here")
+
+#define g_func(type, name, ...) lambda(void, (void* private_it, G_GNUC_UNUSED void* private_no){       \
+                                       type name = private_it;                                         \
+                                       __VA_ARGS__                                                     \
+                                })
 
 #define union_fail(...) (g_assert_e(((void)(__VA_ARGS__) , false)), (__VA_ARGS__))
 

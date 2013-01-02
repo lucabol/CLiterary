@@ -18,3 +18,15 @@
 1357053112 c:\projects\clite\clite.h
 	"lutils.h"
 
+1357144929 source:c:\projects\cliterary\clite.c
+	<string.h>
+	<stdbool.h>
+	<glib.h>
+	<glib/gprintf.h>
+	"lutils.h"
+
+1357125836 c:\projects\cliterary\lutils.h
+	<stdlib.h>
+	<stdio.h>
+	<stdbool.h>
+
