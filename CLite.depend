@@ -1,0 +1,20 @@
+# depslib dependency file v1.0
+1357066239 source:c:\projects\clite\clite.c
+	<string.h>
+	<stdbool.h>
+	"glib.h"
+	"lutils.h"
+
+1357064642 c:\projects\clite\lutils.h
+	<stdlib.h>
+	<stdio.h>
+	<stdbool.h>
+
+1357056361 source:c:\projects\clite\tests.c
+	"glib.h"
+	"lutils.h"
+	"clite.h"
+
+1357053112 c:\projects\clite\clite.h
+	"lutils.h"
+

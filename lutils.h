@@ -3,23 +3,62 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef __GNUC__
 // It should really be an attribute 'unused' on each function, so as not to disable it for all translation unit
 #pragma GCC diagnostic ignored "-Wunused-function"
 // Needs nested functions and block expressions
 
- static __inline__ void __autofree(void *p) {
+ static inline void __autofree(void *p) {
      void **_p = (void**)p;
      free(*_p);
  }
 
+static inline G_GNUC_PURE bool str_empty(const char* str) {return str[0] == '\0';}
+
+#define array_foreach(p) for(; *p != NULL; ++p)
+
+#define array_find(arr, ...)                            \
+    ({                                                  \
+        array_foreach(arr) if (__VA_ARGS__) break;      \
+        *arr;                                           \
+    })
+
+static inline
+GQueue* array_to_queue(void** array) {
+    g_assert(array);
+
+    GQueue* q = g_queue_new();
+    for(; *array != NULL; array++) {
+        g_queue_push_tail(q, *array);
+    }
+    g_assert(q);
+    return q;
+}
+
 #define auto_clean(f)   __attribute((cleanup(f)))
 #define auto_free       auto_clean(__autofree)
 
-#define lambda(return_type, function_body)  \
+#ifdef G_ENABLE_SLOW_ASSERT
+#define g_slow_assert(...) G_STMT_START g_assert(__VA_ARGS__); G_STMT_END
+#else
+#define g_slow_assert(...)
+#endif
+
+#define g_queue_push_back(q, ...)                       \
+    ({                                                  \
+     g_queue_push_tail(q, __VA_ARGS__);                 \
+     q; })
+
+#define g_queue_push_front(q, ...)                      \
+    ({                                                  \
+     g_queue_push_head(q, __VA_ARGS__);                 \
+     q; })
+
+#define lambda(return_type, ...)            \
   ({                                        \
-    return_type __fn__ function_body        \
+    return_type __fn__ __VA_ARGS__          \
     __fn__;                                 \
   })
 
@@ -31,7 +70,7 @@ typedef struct alg {                                                            
     union {
 
 #define union_type(type, ...)                                                       \
-    struct type { __VA_ARGS__ } type;
+    struct type { __VA_ARGS__ ;} type;
 
 #define union_end(alg)                                                              \
     };} alg;
@@ -41,6 +80,20 @@ typedef struct alg {                                                            
         (instance)->kind     = (type);                                              \
         (instance)->type   = (struct type) { __VA_ARGS__ };                         \
     } G_STMT_END
+
+#define union_new(alg, type, ...)                                               \
+    ({                                                                          \
+        alg* instance = g_new(alg, 1);                                          \
+        instance->kind     = (type);                                            \
+        instance->type   = (struct type) { __VA_ARGS__ };                       \
+        instance;                                                               \
+    })
+
+#define g_error_e(...)                                                              \
+    ({                                                                              \
+        g_error(__VA_ARGS__);                                                       \
+        NULL;                                                                    \
+    })
 
 #define g_assert_e(expr) (                                                          \
     (G_LIKELY (!expr) ?                                                             \
