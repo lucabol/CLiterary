@@ -64,7 +64,7 @@ usable and I add a version of it without the `_z` to lutils.h.
 #define array_foreach_z(p) for(; *symbols != NULL; ++symbols)
 
 static
-GString* usage_new(LangSymbols** symbols) {
+char* summary(LangSymbols** symbols) {
 
     GString* langs = g_string_sized_new(20);
     array_foreach(symbols) g_string_append_printf(langs, "%s ", (*symbols)->language);
@@ -73,25 +73,13 @@ GString* usage_new(LangSymbols** symbols) {
 
     GString* usage = g_string_sized_new(100);
 
-    g_string_printf(usage, "                                    \n\
-Usage: llite inputFile parameters                               \n\
-where:                                                          \n\
-One of the following two sets of parameters is mandatory        \n\
-    -no string : string opening a narrative comment             \n\
-    -nc string : string closing a narrative comment             \n\
-or                                                              \n\
-    -l language: where language is one of (%s)                  \n\
-                                                                \n\
-One of the following two sets of parameters is mandatory        \n\
-    -co string : string opening a code block                    \n\
-    -cc string : string closing a code block                    \n\
-or                                                              \n\
-    -indent N  : indent the code by N whitespaces               \n\
-                                                                \n\
-The following parameters are optional:                          \n\
-    -o outFile : defaults to the input file name with mkd extension", langs->str);
+    g_string_printf(usage,
+        "You should specify:\n\t. either -l or -o and -p\n"
+        "\t. either -indent or -P and -C\n"
+        "\t. -l supports: %s"
+        ,langs->str);
 
-    return usage;
+    return usage->str;
 }
 
 /**
@@ -244,7 +232,11 @@ This has a similar structure as the F# version, just longer. It is very long bec
 of these close to each other makes the difference in concicesness between F# and C more apparent.
 
 The creation of a `error` macro is unfortunate. I just don't know how to adapt `g_assert_e` so that it works for not pointer returning functions.
+
+I also need a simple function `report_error` to exit gracefully giving a message to the user. I didn't found such thing in glib (?)
 **/
+
+#define report_error_z(...) G_STMT_START { g_print(__VA_ARGS__); exit(1); } G_STMT_END                                                            \
 
 union_decl(Chunk, NarrativeChunk, CodeChunk)
     union_type(NarrativeChunk,  GQueue* tokens)
@@ -258,7 +250,7 @@ GQueue* parse(Options* options, GQueue* tokens) {
 
     struct tuple { GQueue* acc; GQueue* rem;};
 
-    #define error(...) ({ g_error(__VA_ARGS__); (struct tuple) {.acc = NULL, .rem = NULL}; })
+    #define error(...) ({ report_error(__VA_ARGS__); (struct tuple) {.acc = NULL, .rem = NULL}; })
 
     struct tuple parse_narrative(GQueue* acc, GQueue* rem) {
 
@@ -302,7 +294,7 @@ GQueue* parse(Options* options, GQueue* tokens) {
                                            GQueue* newQ = g_queue_push_back(acc, ch);
                                            parse_rec(newQ, tu.rem);
                                            })                                                              :
-                h->kind == CloseComment ? g_error_e("Don't insert a close narrative comment at the start of your program at line %i",
+                h->kind == CloseComment ? report_error_e("Don't insert a close narrative comment at the start of your program at line %i",
                                                 h->OpenComment.line)                                        :
                 h->kind == Text         ?
                                         ({
@@ -337,13 +329,13 @@ GQueue* flatten(Options* options, GQueue* chunks) {
     GString* token_to_string_narrative(Token* tok) {
         return  tok->kind == OpenComment ||
                 tok->kind == CloseComment   ?
-                    g_error_e("Cannot nest narrative comments at line %i", tok->OpenComment.line)   :
+                    report_error_e("Cannot nest narrative comments at line %i", tok->OpenComment.line)   :
                 tok->kind == Text           ? g_string_new(tok->Text.text)                          :
                                               g_assert_no_match;
     }
     GString* token_to_string_code(Token* tok) {
         return  tok->kind == OpenComment    ?
-                    g_error_e("Open narrative comment cannot be in code at line %i. Pheraps you have an open comment "
+                    report_error_e("Open narrative comment cannot be in code at line %i. Pheraps you have an open comment "
                               "in a code string before this comment tag?"
                               , tok->OpenComment.line)                                              :
                 tok->kind == CloseComment   ? g_string_new(options->end_narrative)                  :
@@ -535,7 +527,6 @@ GQueue* add_code_tags(Options* options, GQueue* blocks) {
                                                             g_assert_no_match;
 }
 
-static
 char* stringify(GQueue* blocks) {
     GString* res = g_string_sized_new(2048);
     g_queue_foreach(blocks, g_func(Block*, b,
@@ -544,17 +535,127 @@ char* stringify(GQueue* blocks) {
     return res->str;
 }
 
-#define RUN_TESTS
+static
+char* translate(Options* options, char* source) {
+    return stringify(process_phases(options, blockize(options, source)));
+}
 
-#ifndef RUN_TESTS
+/**
+Parsing the command line
+------------------------
+
+In glib there is a command line parser that accept options in unix-like format and automatically produces professional
+`--help` messages and such. We shoudl really have something like this in .NET.
+**/
+
+typedef struct CmdOptions { char* input_file; char* output_file; Options* options;} CmdOptions;
+
+static
+CmdOptions* parse_command_line(int argc, char* argv[]);
+
+static char *no = NULL, *nc = NULL, *l = NULL, *co = NULL, *cc = NULL, *ou = NULL;
+static char** in_file;
+
+static int ind = 0;
+static bool tests = false;
+
+// this is a bug in gcc, fixed in 2.7.0 not to moan about the final NULL
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
+static GOptionEntry entries[] =
+{
+  { "language"          , 'l', 0, G_OPTION_ARG_STRING, &l , "Language used",                        "L" },
+  { "output"            , 'o', 0, G_OPTION_ARG_FILENAME, &ou, "Defaults to the input file name with mkd extension", "FILE"},
+  { "narrative-open"    , 'p', 0, G_OPTION_ARG_STRING, &no, "String opening a narrative comment",   "NO" },
+  { "narrative-close"   , 'c', 0, G_OPTION_ARG_STRING, &nc, "String closing a narrative comment",   "NC" },
+  { "code-open"         , 'P', 0, G_OPTION_ARG_STRING, &co, "String opening a code block",          "CO" },
+  { "code-close"        , 'C', 0, G_OPTION_ARG_STRING, &cc, "String closing a code block",          "CC" },
+  { "indent"            , 'i', 0, G_OPTION_ARG_INT,    &ind, "Indent the code by N whitespaces",    "N" },
+  { "run-tests"         , 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,   &tests, "Run all the testcases",               NULL },
+  { G_OPTION_REMAINING  ,   0, 0, G_OPTION_ARG_FILENAME_ARRAY, &in_file, "Input file to process",      "FILE" },
+  { NULL }
+};
+#pragma GCC diagnostic pop
+
+/**
+Brain damaged way to run tests with a `-t` hidden option. Not paying the code size price in release.
+**/
+
+#ifndef NDEBUG
+#include "tests.c"
+#endif
+
+/**
+Here is my big ass command parsing function. It could use a bit of refactoring ...
+**/
+
+static
+CmdOptions* parse_command_line(int argc, char* argv[]) {
+
+    GError *error = NULL;
+    GOptionContext *context;
+
+    context = g_option_context_new ("- translate source code with comemnts to an annotated file");
+    g_option_context_add_main_entries (context, entries, NULL);
+    g_option_context_set_summary(context, summary(s_lang_params_table));
+
+    if (!g_option_context_parse (context, &argc, &argv, &error))
+        report_error("option parsing failed: %s", error->message);
+
+    CmdOptions* opt = g_new(CmdOptions, 1);
+    opt->options = g_new(Options, 1);
+    opt->options->code_symbols = g_new(CodeSymbols, 1);
+
+    #ifndef NDEBUG
+    if(tests) run_tests(argc, argv);
+    #endif
+
+    if(!in_file) report_error("No input file");
+    opt->input_file = *in_file;
+
+    // Uses input file without extension, adding extension .mkd (assume markdown)
+    opt->output_file = ou ? ou :  ({
+                                  char* output      = g_strdup(*in_file);
+                                  char* extension   = g_strrstr(output, ".");
+                                  extension ? ({
+                                               *extension = '\0';
+                                               g_strjoin("", output, ".mkd", NULL);
+                                                }) :
+                                               g_strjoin("", output, ".mkd", NULL);
+                                  });
+
+    if(l) { // user passed a language
+        LangSymbols* lang = lang_find_symbols(s_lang_params_table, l);
+        if(!lang) report_error("%s is not a supported language", l);
+
+        opt->options->start_narrative  = lang->start;
+        opt->options->end_narrative    = lang->end;
+
+    } else {
+        if(!no || !nc) report_error("You need to specify either -l, or both -p and -c");
+
+        opt->options->start_narrative  = no;
+        opt->options->end_narrative    = nc;
+    }
+
+    if(ind) { // user passed indent
+        opt->options->code_symbols->Indented.indentation = ind;
+        g_debug("%i", opt->options->code_symbols->Indented.indentation);
+    } else {
+        if(!co || !cc) report_error("You need to specify either -indent, or both -P and -C");
+        opt->options->code_symbols->Surrounded.start_code = co;
+        opt->options->code_symbols->Surrounded.end_code   = cc;
+        g_debug("%s %s", opt->options->code_symbols->Surrounded.start_code, opt->options->code_symbols->Surrounded.end_code);
+    }
+
+    return opt;
+
+}
+
 
 int main(int argc, char* argv[])
 {
+    parse_command_line(argc, argv);
     return 0;
 }
-
-#else
-
-#include "tests.c"
-
-#endif // RUN_TESTS

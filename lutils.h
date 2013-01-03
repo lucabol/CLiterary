@@ -123,6 +123,10 @@ gint g_asprintf(gchar** string, gchar const *format, ...) {
     return bytes;
 }
 
+#define report_error(...) G_STMT_START { g_print(__VA_ARGS__); exit(1); } G_STMT_END                                                            \
+
+#define report_error_e(...) ({report_error(__VA_ARGS__); NULL;})
+
 #define union_fail(...) (g_assert_e(((void)(__VA_ARGS__) , false)), (__VA_ARGS__))
 
 #define union_case_only_s(instance, type, ...)                                      \

@@ -191,7 +191,24 @@ void test_code_tags() {
     };
 }
 
-int runTests(int argc, char* argv[]) {
+static
+void test_translate() {
+    str_pair* t[] = {
+        &(str_pair) {.exp = " bb ", .got = "\n````fsharp\nbb\n````\n"},
+        &(str_pair) {.exp = "(** bb **)", .got = "\nbb\n"},
+        &(str_pair) {.exp = "bb (** aa **)", .got = "\n````fsharp\nbb\n````\n\naa\n"},
+        NULL
+    };
+
+    str_pair** ptr = t;
+    array_foreach(ptr) {
+        char* result = translate(s_fsharp_options, (*ptr)->exp);
+
+        g_assert_cmpstr((*ptr)->got, ==, result);
+    };
+}
+
+int run_tests(int argc, char* argv[]) {
     g_test_init(&argc, &argv, NULL);
 
     if(g_test_quick()) {
@@ -212,12 +229,8 @@ int runTests(int argc, char* argv[]) {
         g_test_add_func("/clite/indent",        test_indent);
         g_test_add_func("/clite/afterprefix",   test_after_prefix);
         g_test_add_func("/clite/codetags",      test_code_tags);
+        g_test_add_func("/clite/translate",      test_translate);
     }
 
     return g_test_run();
-}
-
-int main(int argc, char* argv[])
-{
-    return runTests(argc, argv);
 }
