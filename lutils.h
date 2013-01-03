@@ -105,6 +105,24 @@ typedef struct alg {                                                            
                                        __VA_ARGS__                                                     \
                                 })
 
+#define g_queue_map(q, type, name, ...) ({                                                                     \
+        GQueue* private_res = g_queue_new();                                                                   \
+        g_queue_foreach(q, g_func(type, name,                                                                   \
+            name = __VA_ARGS__;                                                                                 \
+            g_queue_push_tail(private_res, name);                                                               \
+            ), NULL);                                                                                           \
+        private_res;                                                                                            \
+                                      })
+
+inline static
+gint g_asprintf(gchar** string, gchar const *format, ...) {
+	va_list argp;
+	va_start(argp, format);
+	gint bytes = g_vasprintf(string, format, argp);
+	va_end(argp);
+    return bytes;
+}
+
 #define union_fail(...) (g_assert_e(((void)(__VA_ARGS__) , false)), (__VA_ARGS__))
 
 #define union_case_only_s(instance, type, ...)                                      \

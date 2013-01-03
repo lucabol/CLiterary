@@ -18,15 +18,18 @@
 1357053112 c:\projects\clite\clite.h
 	"lutils.h"
 
-1357144929 source:c:\projects\cliterary\clite.c
+1357213058 source:c:\projects\cliterary\clite.c
 	<string.h>
 	<stdbool.h>
 	<glib.h>
 	<glib/gprintf.h>
 	"lutils.h"
+	"tests.i"
 
-1357125836 c:\projects\cliterary\lutils.h
+1357205286 c:\projects\cliterary\lutils.h
 	<stdlib.h>
 	<stdio.h>
 	<stdbool.h>
+
+1357213046 c:\projects\cliterary\tests.i
 
