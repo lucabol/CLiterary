@@ -7,19 +7,19 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin\DebugGcc\CLite" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj\DebugGcc\" />
+				<Option output="bin/DebugGcc/CLite" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/DebugGcc/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-l java blah.c" />
+				<Option parameters="-l fsharp -i 4 c:\projects\clite\bin\debuggcc\program.fs" />
 				<Compiler>
 					<Add option="-g" />
 					<Add option="-DG_ENABLE_SLOW_ASSERT" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin\ReleaseGcc\CLite" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj\ReleaseGcc\" />
+				<Option output="bin/ReleaseGcc/CLite" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/ReleaseGcc/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>

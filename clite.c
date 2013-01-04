@@ -376,7 +376,9 @@ Now we can tie everything together to build blockize, which is our parse tree.
 
 static
 GQueue* blockize(Options* options, char* source) {
-    return flatten(options, parse(options, tokenize(options, source)));
+    GQueue* tokens  = tokenize(options, source);
+    GQueue* blocks  = parse(options, tokens);
+    return flatten(options, blocks);
 }
 
 /**
@@ -395,7 +397,11 @@ GQueue* add_code_tags(Options*, GQueue*);
 
 static
 GQueue* process_phases(Options* options, GQueue* blocks) {
-        return add_code_tags(options, merge_blocks(options, remove_empty_blocks(options, blocks)));
+
+    blocks          = remove_empty_blocks(options, blocks);
+    blocks          = merge_blocks(options, blocks);
+    blocks          = add_code_tags(options, blocks);
+    return blocks;
 }
 
 static
@@ -440,12 +446,12 @@ GQueue* merge_blocks(G_GNUC_UNUSED Options*options, GQueue* blocks) {
                  h1->kind == Code && h2->kind == Code ? ({
                      char* newCode = g_strjoin("", h1->Code.code, NL, h2->Code.code, NULL);
                      Block* b = union_new(Block, Code, .code = newCode);
-                     merge_blocks(options, g_queue_push_back(blocks, b));
+                     merge_blocks(options, g_queue_push_front(blocks, b));
                                                          })         :
                  h1->kind == Narrative && h2->kind == Narrative ? ({
-                     char* newCode = g_strjoin("", h1->Narrative.narrative, NL, h2->Narrative.narrative, NULL);
-                     Block* b = union_new(Block, Code, .code = newCode);
-                     merge_blocks(options, g_queue_push_back(blocks, b));
+                     char* newNarr = g_strjoin("", h1->Narrative.narrative, NL, h2->Narrative.narrative, NULL);
+                     Block* b = union_new(Block, Narrative, .narrative = newNarr);
+                     merge_blocks(options, g_queue_push_front(blocks, b));
                                                          })         :
                                                          ({
                      GQueue* newBlocks = merge_blocks(options, g_queue_push_front(blocks, h2));
@@ -532,12 +538,19 @@ char* stringify(GQueue* blocks) {
     g_queue_foreach(blocks, g_func(Block*, b,
         g_string_append(res, extract(b));
     ), NULL);
-    return res->str;
+    return g_strchug(res->str);
 }
+
+void deb(GQueue* q);
 
 static
 char* translate(Options* options, char* source) {
-    return stringify(process_phases(options, blockize(options, source)));
+    g_assert(options);
+    g_assert(source);
+
+    GQueue* blocks  = blockize(options, source);
+    blocks          = process_phases(options, blocks);
+    return stringify(blocks);
 }
 
 /**
@@ -605,7 +618,6 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
 
     CmdOptions* opt = g_new(CmdOptions, 1);
     opt->options = g_new(Options, 1);
-    opt->options->code_symbols = g_new(CodeSymbols, 1);
 
     #ifndef NDEBUG
     if(tests) run_tests(argc, argv);
@@ -640,22 +652,45 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
     }
 
     if(ind) { // user passed indent
-        opt->options->code_symbols->Indented.indentation = ind;
-        g_debug("%i", opt->options->code_symbols->Indented.indentation);
+        opt->options->code_symbols = union_new(CodeSymbols, Indented, .indentation = ind);
     } else {
         if(!co || !cc) report_error("You need to specify either -indent, or both -P and -C");
-        opt->options->code_symbols->Surrounded.start_code = co;
-        opt->options->code_symbols->Surrounded.end_code   = cc;
-        g_debug("%s %s", opt->options->code_symbols->Surrounded.start_code, opt->options->code_symbols->Surrounded.end_code);
+        opt->options->code_symbols = union_new(CodeSymbols, Surrounded, .start_code = co, .end_code = cc);
     }
 
     return opt;
 
 }
+/**
+Some windows programs (i.e. notepad, VS, ...) add a 3 bytes prelude to their utf-8 files, C doesn't know
+anything about it, so you need to strip it. I'm not sure this is correct, perhaps I should also convert
+from utf-8 to the c locale in case the code contains some unicode chars? Perhaps I should add the bom back?
 
+One of these days I'll need to understand unicode (if possible).
+**/
+
+char* skip_utf8_bom(char* str) {
+    unsigned char* b = (unsigned char*) str;
+    return  b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF    ? (char*) &b[3]  : // UTF-8
+                                                              (char*) b;
+}
 
 int main(int argc, char* argv[])
 {
-    parse_command_line(argc, argv);
+    CmdOptions* opt = parse_command_line(argc, argv);
+
+    char* source    = NULL;
+    GError* error   = NULL;
+
+    if(!g_file_get_contents(opt->input_file, &source, NULL, &error))
+        report_error(error->message);
+
+    source = skip_utf8_bom(source);
+
+    char* text      = translate(opt->options, source);
+
+    if(!g_file_set_contents(opt->output_file, text, -1, &error))
+        report_error(error->message);
+
     return 0;
 }

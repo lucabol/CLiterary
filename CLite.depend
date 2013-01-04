@@ -1,11 +1,13 @@
 # depslib dependency file v1.0
-1357066239 source:c:\projects\clite\clite.c
+1357257425 source:c:\projects\clite\clite.c
 	<string.h>
 	<stdbool.h>
-	"glib.h"
+	<glib.h>
+	<glib/gprintf.h>
 	"lutils.h"
+	"tests.c"
 
-1357064642 c:\projects\clite\lutils.h
+1357246931 c:\projects\clite\lutils.h
 	<stdlib.h>
 	<stdio.h>
 	<stdbool.h>
@@ -34,4 +36,6 @@
 1357213046 c:\projects\cliterary\tests.i
 
 1357221425 c:\projects\cliterary\tests.c
+
+1357251431 c:\projects\clite\tests.c
 
