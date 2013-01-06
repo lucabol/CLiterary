@@ -21,6 +21,7 @@ I will be using glib and an header of convenient macros/functions to help me. I 
 A modern C praticoner has its bag of tricks.
 **/
 
+#define PRINTMEM
 #ifdef PRINTMEM
 #include <windows.h>
 #include <psapi.h>
@@ -31,7 +32,8 @@ A modern C praticoner has its bag of tricks.
 
 #include <glib.h>
 #include <glib/gprintf.h>
-#include <arena.h>
+
+#include "talloc.h"
 
 #include "lutils.h"
 
@@ -625,7 +627,7 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
     opt->options = g_new(Options, 1);
 
     #ifndef NDEBUG
-    if(tests) run_tests(argc, argv);
+    if(tests) exit(run_tests(argc, argv));
     #endif
 
     if(!in_file) report_error("No input file");
@@ -716,28 +718,21 @@ void PrintMemoryInfo()
 }
 #endif
 
-static Arena_T* the_arena;
+void* the_arena;
 
-static
+inline static
 gpointer arena_malloc(gsize n_bytes) {
-    return Arena_alloc(*the_arena, n_bytes, __FILE__, __LINE__);
+    return talloc_size(the_arena, n_bytes);
 }
 
-static
-gpointer arena_calloc(gsize n_blocks, gsize    n_block_bytes) {
-    return Arena_calloc(*the_arena, n_blocks, n_block_bytes, __FILE__, __LINE__);
+inline static
+gpointer arena_calloc(gsize n_blocks, gsize n_block_bytes) {
+    return talloc_array_size(the_arena, n_block_bytes, n_blocks);
 }
 
-/**
-This is wrong in the case where mem points to a block of memory smaller than n_bytes and close to the end
-of the arena. In such case, memmove reads from unaddressable memory and copies that garbage in n_bytes.
-**/
-
-static
+inline static
 gpointer arena_realloc(gpointer mem, gsize n_bytes) {
-    gpointer newBlock = Arena_alloc(*the_arena, n_bytes, __FILE__, __LINE__);
-    if(mem) memmove(newBlock, mem, n_bytes);
-    return newBlock;
+    return talloc_realloc_size(the_arena, mem, n_bytes);
 }
 
 void arena_free(G_GNUC_UNUSED gpointer mem) {
@@ -745,21 +740,21 @@ void arena_free(G_GNUC_UNUSED gpointer mem) {
 }
 
 void set_arena_allocator() {
-    GMemVTable vt = (GMemVTable) { .malloc = arena_malloc, .calloc = arena_calloc, .realloc = arena_realloc, .free = arena_free};
+    GMemVTable vt = (GMemVTable) { .malloc = arena_malloc,      .calloc = arena_calloc,
+                                   .realloc = arena_realloc,    .free = arena_free,
+                                   .try_malloc = arena_malloc,  .try_realloc = arena_realloc};
     g_mem_set_vtable(&vt);
 
-    the_arena = malloc(sizeof(Arena_T));
-    *the_arena = Arena_new();
+    the_arena = talloc_init("Top");
 }
 
 void destroy_arena_allocator() {
-    Arena_free(*the_arena);
-    Arena_dispose(the_arena);
+    talloc_free(the_arena);
 }
 
 int main(int argc, char* argv[])
 {
-    set_arena_allocator();
+    //set_arena_allocator();
 
     CmdOptions* opt = parse_command_line(argc, argv);
 
@@ -776,8 +771,10 @@ int main(int argc, char* argv[])
     if(!g_file_set_contents(opt->output_file, text, -1, &error))
         report_error(error->message);
 
-    destroy_arena_allocator();
+    //destroy_arena_allocator();
 
-    //PrintMemoryInfo();
+#ifdef PRINTMEM
+    PrintMemoryInfo();
+#endif
     return 0;
 }

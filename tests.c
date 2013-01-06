@@ -128,7 +128,7 @@ void test_remove_empty_blocks() {
 static
 void test_merge_blocks() {
     str_pair* t[] = {
-        &(str_pair) {.exp = "(**abc**)(**def**)", .got = "abc\ndef"},
+        &(str_pair) {.exp = "(**abc**)(**def**)", .got = "(**abc\ndef**)"},
         &(str_pair) {.exp = "  (**  **)aa(** **)bb", .got = "aa\nbb"},
         NULL
     };
@@ -194,9 +194,9 @@ void test_code_tags() {
 static
 void test_translate() {
     str_pair* t[] = {
-        &(str_pair) {.exp = " bb ", .got = "\n````fsharp\nbb\n````\n"},
-        &(str_pair) {.exp = "(** bb **)", .got = "\nbb\n"},
-        &(str_pair) {.exp = "bb (** aa **)", .got = "\n````fsharp\nbb\n````\n\naa\n"},
+        &(str_pair) {.exp = " bb ", .got = "````fsharp\nbb\n````\n"},
+        &(str_pair) {.exp = "(** bb **)", .got = "bb\n"},
+        &(str_pair) {.exp = "bb (** aa **)", .got = "````fsharp\nbb\n````\n\naa\n"},
         NULL
     };
 
