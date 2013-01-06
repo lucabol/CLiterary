@@ -21,7 +21,7 @@ I will be using glib and an header of convenient macros/functions to help me. I 
 A modern C praticoner has its bag of tricks.
 **/
 
-#define PRINTMEM
+//#define PRINTMEM
 #ifdef PRINTMEM
 #include <windows.h>
 #include <psapi.h>
@@ -33,7 +33,7 @@ A modern C praticoner has its bag of tricks.
 #include <glib.h>
 #include <glib/gprintf.h>
 
-#include "talloc.h"
+#include "arena.h"
 
 #include "lutils.h"
 
@@ -610,6 +610,8 @@ Brain damaged way to run tests with a `-t` hidden option. Not paying the code si
 Here is my big ass command parsing function. It could use a bit of refactoring ...
 **/
 
+void destroy_arena_allocator();
+
 static
 CmdOptions* parse_command_line(int argc, char* argv[]) {
 
@@ -627,7 +629,11 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
     opt->options = g_new(Options, 1);
 
     #ifndef NDEBUG
-    if(tests) exit(run_tests(argc, argv));
+    if(tests) {
+        int i = run_tests(argc, argv);
+        destroy_arena_allocator();
+        exit(i);
+    }
     #endif
 
     if(!in_file) report_error("No input file");
@@ -658,7 +664,7 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
         opt->options->end_narrative    = nc;
     }
 
-    if(ind) { // user passed indent
+    if(ind) { // user pass    g_option_context_free();
         opt->options->code_symbols = union_new(CodeSymbols, Indented, .indentation = ind);
     } else {
         if(!co || !cc) report_error("You need to specify either -indent, or both -P and -C");
@@ -666,7 +672,6 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
     }
 
     return opt;
-
 }
 /**
 Some windows programs (i.e. notepad, VS, ...) add a 3 bytes prelude to their utf-8 files, C doesn't know
@@ -718,21 +723,21 @@ void PrintMemoryInfo()
 }
 #endif
 
-void* the_arena;
+Arena_T the_arena;
 
 inline static
 gpointer arena_malloc(gsize n_bytes) {
-    return talloc_size(the_arena, n_bytes);
+    return Arena_alloc(the_arena, n_bytes, __FILE__, __LINE__);
 }
 
 inline static
 gpointer arena_calloc(gsize n_blocks, gsize n_block_bytes) {
-    return talloc_array_size(the_arena, n_block_bytes, n_blocks);
+    return Arena_calloc(the_arena, n_blocks, n_block_bytes, __FILE__, __LINE__);
 }
 
 inline static
 gpointer arena_realloc(gpointer mem, gsize n_bytes) {
-    return talloc_realloc_size(the_arena, mem, n_bytes);
+    return Arena_realloc(the_arena, mem, n_bytes, __FILE__, __LINE__);
 }
 
 void arena_free(G_GNUC_UNUSED gpointer mem) {
@@ -745,16 +750,16 @@ void set_arena_allocator() {
                                    .try_malloc = arena_malloc,  .try_realloc = arena_realloc};
     g_mem_set_vtable(&vt);
 
-    the_arena = talloc_init("Top");
+    the_arena = Arena_new();
 }
 
 void destroy_arena_allocator() {
-    talloc_free(the_arena);
+    Arena_dispose(&the_arena);
 }
 
 int main(int argc, char* argv[])
 {
-    //set_arena_allocator();
+    set_arena_allocator();
 
     CmdOptions* opt = parse_command_line(argc, argv);
 
@@ -771,7 +776,7 @@ int main(int argc, char* argv[])
     if(!g_file_set_contents(opt->output_file, text, -1, &error))
         report_error(error->message);
 
-    //destroy_arena_allocator();
+    destroy_arena_allocator();
 
 #ifdef PRINTMEM
     PrintMemoryInfo();

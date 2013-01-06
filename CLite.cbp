@@ -38,10 +38,11 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add directory="C:/Mingw-local/include" />
+			<Add directory="C:/src/LLib" />
 		</Compiler>
 		<Linker>
-			<Add library="cii" />
+			<Add library="llib" />
+			<Add directory="C:/src/LLib/bin/DebugGcc" />
 		</Linker>
 		<Unit filename="clite.c">
 			<Option compilerVar="CC" />

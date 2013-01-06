@@ -1,12 +1,12 @@
 # depslib dependency file v1.0
-1357467795 source:c:\projects\clite\clite.c
+1357487042 source:c:\projects\clite\clite.c
 	<windows.h>
 	<psapi.h>
 	<string.h>
 	<stdbool.h>
 	<glib.h>
 	<glib/gprintf.h>
-	"talloc.h"
+	"arena.h"
 	"lutils.h"
 	"tests.c"
 
@@ -59,8 +59,15 @@
 	<errno.h>
 	<sys/types.h>
 
-1356874661 source:c:\projects\clite\talloc.c
+1357470692 source:c:\projects\clite\talloc.c
 	"talloc.h"
 	<valgrind/memcheck.h>
 	<valgrind.h>
+
+1357484019 c:\src\llib\arena.h
+	"except.h"
+
+1357474700 c:\src\llib\except.h
+	<setjmp.h>
+	<windows.h>
 
