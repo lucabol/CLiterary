@@ -1,9 +1,12 @@
 # depslib dependency file v1.0
-1357257425 source:c:\projects\clite\clite.c
+1357430768 source:c:\projects\clite\clite.c
+	<windows.h>
+	<psapi.h>
 	<string.h>
 	<stdbool.h>
 	<glib.h>
 	<glib/gprintf.h>
+	<arena.h>
 	"lutils.h"
 	"tests.c"
 
@@ -38,4 +41,11 @@
 1357221425 c:\projects\cliterary\tests.c
 
 1357251431 c:\projects\clite\tests.c
+
+1356977972 c:\mingw-local\include\arena.h
+	"except.h"
+
+1356977972 c:\mingw-local\include\except.h
+	<setjmp.h>
+	<windows.h>
 

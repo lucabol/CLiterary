@@ -13,7 +13,9 @@
 				<Option compiler="gcc" />
 				<Option parameters="-l fsharp -i 4 c:\projects\clite\bin\debuggcc\program.fs" />
 				<Compiler>
+					<Add option="-fomit-frame-pointer" />
 					<Add option="-g" />
+					<Add option="-O0 -m32 -fno-inline" />
 					<Add option="-DG_ENABLE_SLOW_ASSERT" />
 				</Compiler>
 			</Target>
@@ -22,7 +24,10 @@
 				<Option object_output="obj/ReleaseGcc/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="-l fsharp -i 4 c:\projects\clite\bin\debuggcc\program.fs" />
 				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
 					<Add option="-O2" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
@@ -33,7 +38,11 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="C:/Mingw-local/include" />
 		</Compiler>
+		<Linker>
+			<Add library="cii" />
+		</Linker>
 		<Unit filename="clite.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -21,12 +21,17 @@ I will be using glib and an header of convenient macros/functions to help me. I 
 A modern C praticoner has its bag of tricks.
 **/
 
+#ifdef PRINTMEM
+#include <windows.h>
+#include <psapi.h>
+#endif
+
 #include <string.h>
 #include <stdbool.h>
 
 #include <glib.h>
 #include <glib/gprintf.h>
-
+#include <arena.h>
 
 #include "lutils.h"
 
@@ -663,10 +668,11 @@ CmdOptions* parse_command_line(int argc, char* argv[]) {
 }
 /**
 Some windows programs (i.e. notepad, VS, ...) add a 3 bytes prelude to their utf-8 files, C doesn't know
-anything about it, so you need to strip it. I'm not sure this is correct, perhaps I should also convert
-from utf-8 to the c locale in case the code contains some unicode chars? Perhaps I should add the bom back?
+anything about it, so you need to strip it. On this topic, I suspect the program works on UTF-8 files
+that contain non-ASCII chars, even if when I wrote it I didn't know anything about localization.
 
-One of these days I'll need to understand unicode (if possible).
+It should work because I'm just splitting the file when I see a certain ASCII string and in UTF-8 ASCII chars
+cannot appear anywhere else than in their ASCII position.
 **/
 
 char* skip_utf8_bom(char* str) {
@@ -675,8 +681,86 @@ char* skip_utf8_bom(char* str) {
                                                               (char*) b;
 }
 
+#ifdef PRINTMEM
+void PrintMemoryInfo()
+{
+    typedef BOOL (__stdcall *foo)(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD);
+    LPTSTR  ptcPSAPI_DLL = "C:\\WINDOWS\\system32\\psapi.dll";
+    HMODULE   hPSAPI_DLL = LoadLibrary(ptcPSAPI_DLL);
+
+    if( !hPSAPI_DLL ) g_error("ERROR: Failed to load ");
+
+    foo GetProcessMemoryInfo=(foo)GetProcAddress(hPSAPI_DLL, "GetProcessMemoryInfo");
+
+    HANDLE hProcess;
+    PROCESS_MEMORY_COUNTERS pmc;
+
+    hProcess = GetCurrentProcess();
+    g_assert(hProcess);
+
+    if ( GetProcessMemoryInfo( hProcess, &pmc, sizeof(pmc)) )
+    {
+        float bytesInMeg = 1048576;
+        //printf( "\tPageFaultCount: %d\n", pmc.PageFaultCount / bytesInMeg );
+        printf( "\tPeakWorkingSetSize: %f\n", pmc.PeakWorkingSetSize / bytesInMeg );
+        printf( "\tWorkingSetSize: %f\n", pmc.WorkingSetSize / bytesInMeg);
+        //printf( "\tQuotaPeakPagedPoolUsage: %d\n", pmc.QuotaPeakPagedPoolUsage );
+        //printf( "\tQuotaPagedPoolUsage: %d\n", pmc.QuotaPagedPoolUsage );
+        //printf( "\tQuotaPeakNonPagedPoolUsage: %d\n", pmc.QuotaPeakNonPagedPoolUsage );
+        //printf( "\tQuotaNonPagedPoolUsage: %d\n", pmc.QuotaNonPagedPoolUsage );
+        //printf( "\tPagefileUsage: %d\n", pmc.PagefileUsage );
+        //printf( "\tPeakPagefileUsage: %d\n", pmc.PeakPagefileUsage );
+    }
+
+    CloseHandle( hProcess );
+}
+#endif
+
+static Arena_T* the_arena;
+
+static
+gpointer arena_malloc(gsize n_bytes) {
+    return Arena_alloc(*the_arena, n_bytes, __FILE__, __LINE__);
+}
+
+static
+gpointer arena_calloc(gsize n_blocks, gsize    n_block_bytes) {
+    return Arena_calloc(*the_arena, n_blocks, n_block_bytes, __FILE__, __LINE__);
+}
+
+/**
+This is wrong in the case where mem points to a block of memory smaller than n_bytes and close to the end
+of the arena. In such case, memmove reads from unaddressable memory and copies that garbage in n_bytes.
+**/
+
+static
+gpointer arena_realloc(gpointer mem, gsize n_bytes) {
+    gpointer newBlock = Arena_alloc(*the_arena, n_bytes, __FILE__, __LINE__);
+    if(mem) memmove(newBlock, mem, n_bytes);
+    return newBlock;
+}
+
+void arena_free(G_GNUC_UNUSED gpointer mem) {
+    // NOP
+}
+
+void set_arena_allocator() {
+    GMemVTable vt = (GMemVTable) { .malloc = arena_malloc, .calloc = arena_calloc, .realloc = arena_realloc, .free = arena_free};
+    g_mem_set_vtable(&vt);
+
+    the_arena = malloc(sizeof(Arena_T));
+    *the_arena = Arena_new();
+}
+
+void destroy_arena_allocator() {
+    Arena_free(*the_arena);
+    Arena_dispose(the_arena);
+}
+
 int main(int argc, char* argv[])
 {
+    set_arena_allocator();
+
     CmdOptions* opt = parse_command_line(argc, argv);
 
     char* source    = NULL;
@@ -687,10 +771,13 @@ int main(int argc, char* argv[])
 
     source = skip_utf8_bom(source);
 
-    char* text      = translate(opt->options, source);
+    char* text              = translate(opt->options, source);
 
     if(!g_file_set_contents(opt->output_file, text, -1, &error))
         report_error(error->message);
 
+    destroy_arena_allocator();
+
+    //PrintMemoryInfo();
     return 0;
 }
