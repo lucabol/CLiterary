@@ -23,11 +23,12 @@
 1357053112 c:\projects\clite\clite.h
 	"lutils.h"
 
-1357231349 source:c:\projects\cliterary\clite.c
+1363784429 source:c:\projects\cliterary\clite.c
 	<string.h>
 	<stdbool.h>
 	<glib.h>
 	<glib/gprintf.h>
+	"arena.h"
 	"lutils.h"
 	"tests.c"
 
@@ -38,7 +39,7 @@
 
 1357213046 c:\projects\cliterary\tests.i
 
-1357221425 c:\projects\cliterary\tests.c
+1357552726 c:\projects\cliterary\tests.c
 
 1357468005 c:\projects\clite\tests.c
 

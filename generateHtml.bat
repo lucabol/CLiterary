@@ -1,0 +1,2 @@
+pandoc -f markdown program.mkd -t html5 -S -p --self-contained -s --toc -o clite.html --normalize --highlight-style=pygments --number-sections --email-obfuscation=references --css="style.css"
+copy program.mkd README.md

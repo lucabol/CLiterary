@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Luca Bolognese">
+  <meta name="dcterms.date" content="2012-12-12">
+  <title>Funky C for literate programming</title>
+  <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <style type="text/css">
+    q { quotes: "“" "”" "‘" "’"; }
+  </style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link href="data:text/css,body%20%7B%0D%0A%20%20%20%20margin%3A%20auto%3B%0D%0A%20%20%20%20padding%2Dright%3A%201em%3B%0D%0A%20%20%20%20padding%2Dleft%3A%201em%3B%0D%0A%20%20%20%20max%2Dwidth%3A%2050em%3B%20%2F%2A%20Was%2044%2A%2F%0D%0A%20%20%20%20border%2Dleft%3A%201px%20solid%20black%3B%0D%0A%20%20%20%20border%2Dright%3A%201px%20solid%20black%3B%0D%0A%20%20%20%20color%3A%20black%3B%0D%0A%20%20%20%20font%2Dfamily%3A%20Verdana%2C%20sans%2Dserif%3B%0D%0A%20%20%20%20font%2Dsize%3A%20100%25%3B%0D%0A%20%20%20%20line%2Dheight%3A%20140%25%3B%0D%0A%20%20%20%20color%3A%20%23333%3B%20%0D%0A%7D%0D%0Apre%20%7B%0D%0A%20%20%20%20border%3A%201px%20dotted%20gray%3B%0D%0A%20%20%20%20background%2Dcolor%3A%20%23ececec%3B%0D%0A%20%20%20%20color%3A%20%231111111%3B%0D%0A%20%20%20%20padding%3A%200%2E5em%3B%0D%0A%7D%0D%0Acode%20%7B%0D%0A%20%20%20%20font%2Dfamily%3A%20monospace%3B%0D%0A%20%20%20%20font%2Dsize%3A%2012px%3B%0D%0A%20%20%20%20line%2Dheight%3A%201%2E3%3B%0D%0A%7D%0D%0Ah1%20a%2C%20h2%20a%2C%20h3%20a%2C%20h4%20a%2C%20h5%20a%20%7B%20%0D%0A%20%20%20%20text%2Ddecoration%3A%20none%3B%0D%0A%20%20%20%20color%3A%20%237a5ada%3B%20%0D%0A%7D%0D%0Ah1%2C%20h2%2C%20h3%2C%20h4%2C%20h5%20%7B%20font%2Dfamily%3A%20verdana%3B%0D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20font%2Dweight%3A%20bold%3B%0D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20border%2Dbottom%3A%201px%20dotted%20black%3B%0D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20color%3A%20%237a5ada%3B%20%7D%0D%0Ah1%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%20130%25%3B%0D%0A%7D%0D%0A%0D%0Ah2%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%20110%25%3B%0D%0A%7D%0D%0A%0D%0Ah3%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%2095%25%3B%0D%0A%7D%0D%0A%0D%0Ah4%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%2090%25%3B%0D%0A%20%20%20%20%20%20%20%20font%2Dstyle%3A%20italic%3B%0D%0A%7D%0D%0A%0D%0Ah5%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%2090%25%3B%0D%0A%20%20%20%20%20%20%20%20font%2Dstyle%3A%20italic%3B%0D%0A%7D%0D%0A%0D%0Ah1%2Etitle%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%20200%25%3B%0D%0A%20%20%20%20%20%20%20%20line%2Dheight%3A%20102%25%3B%0D%0A%20%20%20%20%20%20%20%20font%2Dweight%3A%20bold%3B%0D%0A%20%20%20%20%20%20%20%20padding%2Dtop%3A%200%2E2em%3B%0D%0A%20%20%20%20%20%20%20%20padding%2Dbottom%3A%200%2E2em%3B%0D%0A%20%20%20%20%20%20%20%20text%2Dalign%3A%20left%3B%0D%0A%20%20%20%20%20%20%20%20border%3A%200%3B%0D%0A%7D%0D%0A%0D%0Adt%20code%20%7B%0D%0A%20%20%20%20%20%20%20%20font%2Dweight%3A%20bold%3B%0D%0A%7D%0D%0Add%20p%20%7B%0D%0A%20%20%20%20%20%20%20%20margin%2Dtop%3A%200%3B%0D%0A%7D%0D%0A%0D%0A%23footer%20%7B%0D%0A%20%20%20%20%20%20%20%20padding%2Dtop%3A%201em%3B%0D%0A%20%20%20%20%20%20%20%20font%2Dsize%3A%2070%25%3B%0D%0A%20%20%20%20%20%20%20%20color%3A%20gray%3B%0D%0A%20%20%20%20%20%20%20%20text%2Dalign%3A%20center%3B%0D%0A%7D%0D%0A" rel="stylesheet">
+</head>
+<body>
+<header>
+<h1 class="title">Funky C for literate programming</h1>
+<h2 class="author">Luca Bolognese</h2>
+<h3 class="date">31/12/2012</h3>
+</header>
+<nav id="TOC">
+<ul>
+<li><a href="#main-ideas"><span class="toc-section-number">1</span> Main ideas</a></li>
+<li><a href="#lack-of-tuples"><span class="toc-section-number">2</span> Lack of tuples</a></li>
+<li><a href="#folding-over-arrays"><span class="toc-section-number">3</span> Folding over arrays</a></li>
+<li><a href="#deallocating-stuff"><span class="toc-section-number">4</span> Deallocating stuff</a></li>
+<li><a href="#discriminated-unions"><span class="toc-section-number">5</span> Discriminated unions</a></li>
+<li><a href="#main-data-structure"><span class="toc-section-number">6</span> Main data structure</a></li>
+<li><a href="#tokenizer"><span class="toc-section-number">7</span> Tokenizer</a></li>
+<li><a href="#parser"><span class="toc-section-number">8</span> Parser</a></li>
+<li><a href="#flattener"><span class="toc-section-number">9</span> Flattener</a></li>
+<li><a href="#define-the-phases"><span class="toc-section-number">10</span> Define the phases</a></li>
+<li><a href="#parsing-the-command-line"><span class="toc-section-number">11</span> Parsing the command line</a></li>
+<li><a href="#not-freeing-memory-again"><span class="toc-section-number">12</span> Not freeing memory (again)</a></li>
+</ul>
+</nav>
+<h1 id="main-ideas"><a href="#TOC"><span class="header-section-number">1</span> Main ideas</a></h1>
+<p>This is a port of <a href="https://github.com/lucabol/LLite/blob/master/Program.fs">LLIte</a> in C. The reason for it is to experiment with writing functional code in standard C and compare the experience with using a functional language like F#</p>
+<p>I will be using glib and an header of convenient macros/functions to help me (lutils.h). I don’t think that is cheating. Any modern C praticoner has its bag of tricks …</p>
+<p>Don’t tell me this is not idiomatic C. I already know that.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#include &lt;string.h&gt;</span>
+<span class="ot">#include &lt;stdbool.h&gt;</span>
+
+<span class="ot">#include &lt;glib.h&gt;</span>
+<span class="ot">#include &lt;glib/gprintf.h&gt;</span>
+
+<span class="ot">#ifdef ARENA</span>
+<span class="ot">#include &quot;arena.h&quot;</span>
+<span class="ot">#endif</span>
+
+<span class="ot">#include &quot;lutils.h&quot;</span></code></pre>
+<h1 id="lack-of-tuples"><a href="#TOC"><span class="header-section-number">2</span> Lack of tuples</a></h1>
+<p>In the snippet below I overcomed such deficiency by declaring a struct. Using the new constructor syntax makes initializing a static table simple.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="kw">typedef</span> <span class="kw">struct</span> LangSymbols { <span class="dt">char</span> language[<span class="dv">40</span>]; <span class="dt">char</span> start[<span class="dv">10</span>]; <span class="dt">char</span> end[<span class="dv">10</span>];} LangSymbols;
+
+<span class="dt">static</span>
+LangSymbols* s_lang_params_table[] = {
+    &amp;(LangSymbols) {.language = <span class="st">&quot;fsharp&quot;</span>,   .start = <span class="st">&quot;(*&quot;</span> <span class="st">&quot;*&quot;</span>, .end = <span class="st">&quot;*&quot;</span> <span class="st">&quot;*)&quot;</span>},
+    &amp;(LangSymbols) {.language = <span class="st">&quot;c&quot;</span>,        .start = <span class="st">&quot;/*&quot;</span> <span class="st">&quot;*&quot;</span>, .end = <span class="st">&quot;*&quot;</span> <span class="st">&quot;*/&quot;</span>},
+    &amp;(LangSymbols) {.language = <span class="st">&quot;csharp&quot;</span>,   .start = <span class="st">&quot;/*&quot;</span> <span class="st">&quot;*&quot;</span>, .end = <span class="st">&quot;*&quot;</span> <span class="st">&quot;*/&quot;</span>},
+    &amp;(LangSymbols) {.language = <span class="st">&quot;java&quot;</span>,     .start = <span class="st">&quot;/*&quot;</span> <span class="st">&quot;*&quot;</span>, .end = <span class="st">&quot;*&quot;</span> <span class="st">&quot;*/&quot;</span>},
+    NULL
+};</code></pre>
+<h1 id="folding-over-arrays"><a href="#TOC"><span class="header-section-number">3</span> Folding over arrays</a></h1>
+<p>I need to gather all the languages, aka perform a fold over the array. You might have noticed the propensity to add a <code>NULL</code> terminator marker to arrays (as for strings). This allows me to avoid passing a size to functions and makes simpler writing utility macros (as <code>foreach</code> below) more simply.</p>
+<p>In the rest of the program, every time I end a function with <code>_z</code>, it is because I consider it generally usable and I add a version of it without the <code>_z</code> to lutils.h.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define array_foreach_z(p) for(; *symbols != NULL; ++symbols)</span>
+
+<span class="dt">static</span>
+<span class="dt">char</span>* summary(LangSymbols** symbols) {
+
+    GString* langs = g_string_sized_new(<span class="dv">20</span>);
+    array_foreach(symbols) g_string_append_printf(langs, <span class="st">&quot;%s &quot;</span>, (*symbols)-&gt;language);
+
+    g_string_truncate(langs, strlen(langs-&gt;str) - <span class="dv">1</span>);
+
+    GString* usage = g_string_sized_new(<span class="dv">100</span>);
+
+    g_string_printf(usage,
+        <span class="st">&quot;You should specify:</span><span class="ch">\n\t</span><span class="st">. either -l or -o and -p</span><span class="ch">\n</span><span class="st">&quot;</span>
+        <span class="st">&quot;</span><span class="ch">\t</span><span class="st">. either -indent or -P and -C</span><span class="ch">\n</span><span class="st">&quot;</span>
+        <span class="st">&quot;</span><span class="ch">\t</span><span class="st">. -l supports: %s&quot;</span>
+        ,langs-&gt;str);
+
+    <span class="kw">return</span> usage-&gt;str;
+}</code></pre>
+<p>Find an item in an array based on some expression. Returns NULL if not found. Again, this is a common task, hence I’ll abstract it out with a macro (that ends up being a cute use of gcc statment expressions).</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define array_find_z(arr, ...)                          \</span>
+    ({                                                  \
+        array_foreach(arr) <span class="kw">if</span> (__VA_ARGS__) <span class="kw">break</span>;      \
+        *arr;                                           \
+    })
+
+<span class="dt">static</span>
+LangSymbols* lang_find_symbols(LangSymbols** symbols, <span class="dt">char</span>* lang) {
+    g_assert(symbols);
+    g_assert(lang);
+
+    <span class="kw">return</span> array_find(symbols, !strcmp((*symbols)-&gt;language, lang));
+}</code></pre>
+<h1 id="deallocating-stuff"><a href="#TOC"><span class="header-section-number">4</span> Deallocating stuff</a></h1>
+<p>You might wonder why I don’t seem overly worried about deallocating the memory that I allocate. I haven’t gone crazy(yet). You’ll see.</p>
+<h1 id="discriminated-unions"><a href="#TOC"><span class="header-section-number">5</span> Discriminated unions</a></h1>
+<p>Here are the discriminated unions macros from a previous blog post of mine. I’ll need a couple of these and pre-declare two functions.</p>
+<pre class="sourceCode c"><code class="sourceCode c">union_decl(CodeSymbols, Indented, Surrounded)
+    union_type(Indented,    <span class="dt">int</span> indentation;)
+    union_type(Surrounded,  <span class="dt">char</span>* start_code; <span class="dt">char</span>* end_code;)
+union_end(CodeSymbols);
+
+<span class="kw">typedef</span> <span class="kw">struct</span> Options {
+    <span class="dt">char</span>*           start_narrative;
+    <span class="dt">char</span>*           end_narrative;
+    CodeSymbols*    code_symbols;
+} Options;
+
+<span class="dt">static</span>
+gchar* translate(Options*, gchar*);
+
+union_decl(Block, Code, Narrative)
+    union_type(Code,        <span class="dt">char</span>* code)
+    union_type(Narrative,   <span class="dt">char</span>* narrative)
+union_end(Block);</code></pre>
+<h1 id="main-data-structure"><a href="#TOC"><span class="header-section-number">6</span> Main data structure</a></h1>
+<p>We want to use higher level abstractions that standard C arrays, hence we’ll pick a convenient data structure to use in the rest of the code. A queue lets you to insert at the front and back, with just a one pointer overhead over a single linked list. Hence it is my data structure of choice for this program.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">static</span>
+GQueue* blockize(Options*, <span class="dt">char</span>*);</code></pre>
+<p>There is already a function in glib to check if a string has a certain prefix (<code>g_str_has_prefix</code>). We need one that returns the remaining string after the prefix. We also define a g_slow_assert that is executed just if G_ENABLE_SLOW_ASSERT is defined</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">static</span>
+<span class="dt">char</span>* str_after_prefix(<span class="dt">char</span>* src, <span class="dt">char</span>* prefix) {
+    g_assert(src);
+    g_assert(prefix);
+    g_slow_assert(g_str_has_prefix(src, prefix));
+
+    <span class="kw">while</span>(*prefix != '\<span class="dv">0</span>')
+        <span class="kw">if</span>(*src == *prefix) ++src, ++prefix;
+        <span class="kw">else</span> <span class="kw">break</span>;
+
+    <span class="kw">return</span> src;
+}</code></pre>
+<h1 id="tokenizer"><a href="#TOC"><span class="header-section-number">7</span> Tokenizer</a></h1>
+<p>The structure of the function is identical to the F# version. The big bread-winners are statement expressions and local functions …</p>
+<p>It is interesting how you can replicate the <q>shape</q> of an F# function by substituting ternary operators for match statements.</p>
+<p>It is nothing magic, just a way to have a case statment as an expression, but it is suggestive of its more functional counterpart.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define NL &quot;\n&quot;</span>
+
+union_decl(Token, OpenComment, CloseComment, Text)
+    union_type(OpenComment, <span class="dt">int</span> line)
+    union_type(CloseComment,<span class="dt">int</span> line)
+    union_type(Text,        <span class="dt">char</span>* text)
+union_end(Token);
+
+GQueue* tokenize(Options* options, <span class="dt">char</span>* source) {
+    g_assert(options);
+    g_assert(source);
+
+    <span class="kw">struct</span> tuple { <span class="dt">int</span> line; GString* acc; <span class="dt">char</span>* rem;};
+
+    bool is_opening(<span class="dt">char</span>* src)          { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;start_narrative);}
+    bool is_closing(<span class="dt">char</span>* src)          { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;end_narrative);}
+    <span class="dt">char</span>* remaining_open (<span class="dt">char</span>* src)    { <span class="kw">return</span> str_after_prefix(src, options-&gt;start_narrative);}
+    <span class="dt">char</span>* remaining_close(<span class="dt">char</span>* src)    { <span class="kw">return</span> str_after_prefix(src, options-&gt;end_narrative);}
+
+    <span class="kw">struct</span> tuple text(<span class="dt">char</span>* src, GString* acc, <span class="dt">int</span> line) {
+        <span class="kw">inline</span> <span class="kw">struct</span> tuple stop_parse_text() { <span class="kw">return</span> (<span class="kw">struct</span> tuple) {.line = line, .acc = acc, .rem = src};}
+
+        <span class="kw">return</span>  str_empty (src)? stop_parse_text() :
+                is_opening(src)? stop_parse_text() :
+                is_closing(src)? stop_parse_text() :
+                                ({
+                                  <span class="dt">int</span> line2         = g_str_has_prefix(src, NL) ? line + <span class="dv">1</span> : line;
+                                  GString* newAcc   = g_string_append_c(acc, *src);
+                                  <span class="dt">char</span>* rem         = src + <span class="dv">1</span>;
+                                  text(rem, newAcc, line2);
+                                });
+    }
+
+    GQueue* tokenize_rec(<span class="dt">char</span>* src, GQueue* acc, <span class="dt">int</span> line) {
+        <span class="kw">return</span>  str_empty(src)  ?   acc                     :
+                is_opening(src) ?   tokenize_rec(remaining_open(src),
+                                               g_queue_push_back(acc, union_new(Token, OpenComment, .line = line)),
+                                               line)        :
+                is_closing(src) ?   tokenize_rec(remaining_close(src),
+                                               g_queue_push_back(acc, union_new(Token, CloseComment, .line = line)),
+                                               line)        :
+                                ({
+                                    <span class="kw">struct</span> tuple t = text(src, g_string_sized_new(<span class="dv">200</span>), line);
+                                    tokenize_rec(t.rem,
+                                        g_queue_push_back(acc, union_new(Token, Text, .text = t.acc-&gt;str)), t.line);
+                                 });
+    }
+
+    <span class="kw">return</span> tokenize_rec(source, g_queue_new(), <span class="dv">1</span>);
+}</code></pre>
+<h1 id="parser"><a href="#TOC"><span class="header-section-number">8</span> Parser</a></h1>
+<p>This again has a similar structure to the F# version, just longer. It is very long because it contains 3 (nested) functions which are on the verbose side in C.</p>
+<p>The creation of a <code>error</code> macro is unfortunate. I just don’t know how to adapt <code>g_assert_e</code> so that it works for not pointer returning functions.</p>
+<p>I also need a simple function <code>report_error</code> to exit gracefully giving a message to the user. I didn’t found such thing in glib (?)</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define report_error_z(...) G_STMT_START { g_print(__VA_ARGS__); exit(1); } G_STMT_END                                                            \</span>
+
+union_decl(Chunk, NarrativeChunk, CodeChunk)
+    union_type(NarrativeChunk,  GQueue* tokens)
+    union_type(CodeChunk,       GQueue* tokens)
+union_end(Chunk);
+
+<span class="dt">static</span>
+GQueue* parse(Options* options, GQueue* tokens) {
+    g_assert(options);
+    g_assert(tokens);
+
+    <span class="kw">struct</span> tuple { GQueue* acc; GQueue* rem;};
+
+    <span class="ot">#define error(...) ({ report_error(__VA_ARGS__); (struct tuple) {.acc = NULL, .rem = NULL}; })</span>
+
+    <span class="kw">struct</span> tuple parse_narrative(GQueue* acc, GQueue* rem) {
+
+        bool isEmpty    = g_queue_is_empty(rem);
+        Token* h        = g_queue_pop_head(rem);
+        GQueue* t       = rem;
+
+        <span class="kw">return</span>  isEmpty                 ? error(<span class="st">&quot;You haven't closed your last narrative comment&quot;</span>)   :
+                h-&gt;kind == OpenComment  ?
+                    error(<span class="st">&quot;Don't open narrative comments inside narrative comments at line %i&quot;</span>, h-&gt;OpenComment.line) :
+                h-&gt;kind == CloseComment ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}                     :
+                h-&gt;kind == Text         ? parse_narrative(g_queue_push_back(acc, h), t)             :
+                                          error(<span class="st">&quot;Should never get here&quot;</span>);
+    };
+
+    <span class="kw">struct</span> tuple parse_code(GQueue* acc, GQueue* rem) {
+
+        bool isEmpty    = g_queue_is_empty(rem);
+        Token* h    = g_queue_pop_head(rem);
+        GQueue* t   = rem;
+
+        <span class="kw">return</span>  isEmpty                 ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}                             :
+                h-&gt;kind == OpenComment  ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = g_queue_push_front(rem, h)}    :
+                h-&gt;kind == CloseComment ? parse_code(g_queue_push_back(acc, h), rem)                        :
+                h-&gt;kind == Text         ? parse_code(g_queue_push_back(acc, h), rem)                        :
+                                          error(<span class="st">&quot;Should never get here&quot;</span>);
+    };
+    <span class="ot">#undef error</span>
+
+    GQueue* parse_rec(GQueue* acc, GQueue* rem) {
+
+        bool isEmpty    = g_queue_is_empty(rem);
+        Token* h    = g_queue_pop_head(rem);
+        GQueue* t   = rem;
+
+        <span class="kw">return</span>  isEmpty                 ? acc                                                               :
+                h-&gt;kind == OpenComment  ? ({
+                                           GQueue* emp = g_queue_new();
+                                           <span class="kw">struct</span> tuple tu = parse_narrative(emp, t);
+                                           Chunk* ch = union_new(Chunk, NarrativeChunk, .tokens = tu.acc );
+                                           GQueue* newQ = g_queue_push_back(acc, ch);
+                                           parse_rec(newQ, tu.rem);
+                                           })                                                              :
+                h-&gt;kind == CloseComment ? report_error_e(<span class="st">&quot;Don't insert a close narrative comment at the start of your program at line %i&quot;</span>,
+                                                h-&gt;OpenComment.line)                                        :
+                h-&gt;kind == Text         ?
+                                        ({
+                                           GQueue* emp = g_queue_new();
+                                           <span class="kw">struct</span> tuple tu = parse_code(g_queue_push_front(emp, h), t);
+                                           parse_rec(g_queue_push_back(acc, union_new(Chunk, CodeChunk, .tokens = tu.acc )),
+                                                     tu.rem);
+                                          })                                                               :
+                                          g_assert_no_match;
+    }
+
+    <span class="kw">return</span> parse_rec(g_queue_new(), tokens);
+}</code></pre>
+<h1 id="flattener"><a href="#TOC"><span class="header-section-number">9</span> Flattener</a></h1>
+<p>This follows the usual practice of representing fold as foreach statments (and maps to). Pheraps I shall build better abstractions for them at some point. I also introduce a little macro to simplify writing of GFunc lambdas, given how pervasive they are.</p>
+<p>Again, note how heavy ternary operated this is …</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_func_z(type, name, ...) lambda(void, (void* private_it, G_GNUC_UNUSED void* private_no){       \</span>
+                                       type name = private_it;                                         \
+                                       __VA_ARGS__                                                     \
+                                })
+
+<span class="dt">static</span>
+GQueue* flatten(Options* options, GQueue* chunks) {
+    GString* token_to_string_narrative(Token* tok) {
+        <span class="kw">return</span>  tok-&gt;kind == OpenComment ||
+                tok-&gt;kind == CloseComment   ?
+                    report_error_e(<span class="st">&quot;Cannot nest narrative comments at line %i&quot;</span>, tok-&gt;OpenComment.line)   :
+                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                          :
+                                              g_assert_no_match;
+    }
+    GString* token_to_string_code(Token* tok) {
+        <span class="kw">return</span>  tok-&gt;kind == OpenComment    ?
+                    report_error_e(<span class="st">&quot;Open narrative comment cannot be in code at line %i. Pheraps you have an open comment &quot;</span>
+                              <span class="st">&quot;in a code string before this comment tag?&quot;</span>
+                              , tok-&gt;OpenComment.line)                                              :
+                tok-&gt;kind == CloseComment   ? g_string_new(options-&gt;end_narrative)                  :
+                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                          :
+                                              g_assert_no_match;
+    }
+    Block* flatten_chunk(Chunk* ch) {
+        <span class="kw">return</span>  ch-&gt;kind == NarrativeChunk  ? ({
+                               GQueue* tokens = ch-&gt;NarrativeChunk.tokens;
+                               GString* res = g_string_sized_new(<span class="dv">256</span>);
+                               g_queue_foreach(tokens, g_func(Token*, tok,
+                                                              g_string_append(res, token_to_string_narrative(tok)-&gt;str);
+                                                              ), NULL);
+                               union_new(Block, Narrative, .narrative = res-&gt;str);
+                                               })   :
+                ch-&gt;kind == CodeChunk       ? ({
+                               GQueue* tokens = ch-&gt;CodeChunk.tokens;
+                               GString* res = g_string_sized_new(<span class="dv">256</span>);
+                               g_queue_foreach(tokens, g_func(Token*, tok,
+                                                              g_string_append(res, token_to_string_code(tok)-&gt;str);
+                                                              ), NULL);
+                               union_new(Block, Code, .code = res-&gt;str);
+                                               })   :
+                               g_assert_no_match;
+    }
+
+    GQueue* res = g_queue_new();
+    g_queue_foreach(chunks, g_func(Chunk*, ch,
+                                Block* b = flatten_chunk(ch);
+                                g_queue_push_tail(res, b);
+                                ) ,NULL);
+    <span class="kw">return</span> res;
+}</code></pre>
+<p>Now we can tie everything together to build blockize, which is our parse tree.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">static</span>
+GQueue* blockize(Options* options, <span class="dt">char</span>* source) {
+    GQueue* tokens  = tokenize(options, source);
+    GQueue* blocks  = parse(options, tokens);
+    <span class="kw">return</span> flatten(options, blocks);
+}</code></pre>
+<h1 id="define-the-phases"><a href="#TOC"><span class="header-section-number">10</span> Define the phases</a></h1>
+<p>In C you can easily forward declare function, so you don’t have to come up with some clever escabotage like we had to do in F#.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">static</span>
+GQueue* remove_empty_blocks(Options*, GQueue*);
+<span class="dt">static</span>
+GQueue* merge_blocks(Options*, GQueue*);
+<span class="dt">static</span>
+GQueue* add_code_tags(Options*, GQueue*);
+
+<span class="dt">static</span>
+GQueue* process_phases(Options* options, GQueue* blocks) {
+
+    blocks          = remove_empty_blocks(options, blocks);
+    blocks          = merge_blocks(options, blocks);
+    blocks          = add_code_tags(options, blocks);
+    <span class="kw">return</span> blocks;
+}
+
+<span class="dt">static</span>
+<span class="dt">char</span>* extract(Block* b) {
+    <span class="kw">return</span>  b-&gt;kind == Code         ? b-&gt;Code.code          :
+            b-&gt;kind == Narrative    ? b-&gt;Narrative.narrative:
+                                      g_assert_no_match;
+}</code></pre>
+<p>There must be a higher level way to write this utility function …</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">static</span>
+bool is_str_all_spaces(<span class="dt">const</span> <span class="dt">char</span>* str) {
+    g_assert(str);
+    <span class="kw">while</span>(*str != '\<span class="dv">0</span>') {
+        <span class="kw">if</span>(!g_ascii_isspace(*str))
+            <span class="kw">return</span> false;
+        str++;
+    }
+    <span class="kw">return</span> true;
+}
+
+<span class="dt">static</span>
+GQueue* remove_empty_blocks(G_GNUC_UNUSED Options* options, GQueue* blocks) {
+
+    g_queue_foreach(blocks, g_func(Block*, b,
+        <span class="kw">if</span>(is_str_all_spaces(extract(b)))
+            g_queue_remove(blocks, b);
+                                   ), NULL);
+    <span class="kw">return</span> blocks;
+}
+
+<span class="dt">static</span>
+GQueue* merge_blocks(G_GNUC_UNUSED Options*options, GQueue* blocks) {
+    <span class="kw">return</span>  g_queue_is_empty(blocks)            ? blocks            :
+            g_queue_get_length(blocks) == <span class="dv">1</span>     ? blocks            :
+                ({
+                 Block* h1 = g_queue_pop_head(blocks);
+                 Block* h2 = g_queue_pop_head(blocks);
+                 h1-&gt;kind == Code &amp;&amp; h2-&gt;kind == Code ? ({
+                     <span class="dt">char</span>* newCode = g_strjoin(<span class="st">&quot;&quot;</span>, h1-&gt;Code.code, NL, h2-&gt;Code.code, NULL);
+                     Block* b = union_new(Block, Code, .code = newCode);
+                     merge_blocks(options, g_queue_push_front(blocks, b));
+                                                         })         :
+                 h1-&gt;kind == Narrative &amp;&amp; h2-&gt;kind == Narrative ? ({
+                     <span class="dt">char</span>* newNarr = g_strjoin(<span class="st">&quot;&quot;</span>, h1-&gt;Narrative.narrative, NL, h2-&gt;Narrative.narrative, NULL);
+                     Block* b = union_new(Block, Narrative, .narrative = newNarr);
+                     merge_blocks(options, g_queue_push_front(blocks, b));
+                                                         })         :
+                                                         ({
+                     GQueue* newBlocks = merge_blocks(options, g_queue_push_front(blocks, h2));
+                     g_queue_push_front(newBlocks, h1);
+                                                         });
+                 });
+}</code></pre>
+<p>This really should be in glib …</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="kw">inline</span> <span class="dt">static</span>
+gint g_asprintf_z(gchar** string, gchar <span class="dt">const</span> *format, ...) {
+	va_list argp;
+	va_start(argp, format);
+	gint bytes = g_vasprintf(string, format, argp);
+	va_end(argp);
+    <span class="kw">return</span> bytes;
+}
+
+<span class="dt">static</span>
+<span class="dt">char</span>* indent(<span class="dt">int</span> n, <span class="dt">char</span>* s) {
+    g_assert(s);
+
+    <span class="dt">char</span>* ind       = g_strnfill(n, ' ');
+    <span class="dt">char</span>* tmp;
+    g_asprintf(&amp;tmp, <span class="st">&quot;%s%s&quot;</span>, ind, s);
+
+    <span class="dt">char</span>* withNl;
+    g_asprintf(&amp;withNl, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">%s&quot;</span>, ind);
+
+    <span class="kw">return</span> g_strjoinv(withNl, g_strsplit(tmp, NL, -<span class="dv">1</span>));
+}</code></pre>
+<p>And finally I ended up defining map. See if you like how the usage looks in the function below.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_queue_map_z(q, type, name, ...) ({                                                                     \</span>
+        GQueue* private_res = g_queue_new();                                                                   \
+        g_queue_foreach(q, g_func(type, name,                                                                   \
+            name = __VA_ARGS__;                                                                                 \
+            g_queue_push_tail(private_res, name);                                                               \
+            ), NULL);                                                                                           \
+        private_res;                                                                                            \
+                                      })
+
+<span class="dt">static</span>
+GQueue* add_code_tags(Options* options, GQueue* blocks) {
+
+    GQueue* indent_blocks(GQueue* blocks) {
+        <span class="kw">return</span> g_queue_map(blocks, Block*, b,
+                b-&gt;kind == Narrative ? b                                                                                                    :
+                b-&gt;kind == Code      ? union_new(Block, Code, .code = indent(options-&gt;code_symbols-&gt;Indented.indentation, b-&gt;Code.code))    :
+                                       g_assert_no_match;);
+    }
+
+    GQueue* surround_blocks(GQueue* blocks) {
+        <span class="kw">return</span> g_queue_map(blocks, Block*, b,
+                b-&gt;kind == Narrative ?
+                    union_new(Block, Narrative, .narrative = g_strjoin(<span class="st">&quot;&quot;</span>, NL, g_strstrip(b-&gt;Narrative.narrative), NL, NULL))   :
+                b-&gt;kind == Code      ?
+                    union_new(Block, Code, .code = g_strjoin(<span class="st">&quot;&quot;</span>,
+                                                             NL,
+                                                             options-&gt;code_symbols-&gt;Surrounded.start_code,
+                                                             NL,
+                                                             g_strstrip(b-&gt;Code.code),
+                                                             NL,
+                                                             options-&gt;code_symbols-&gt;Surrounded.end_code,
+                                                             NL,
+                                                             NULL))    :
+                                       g_assert_no_match;);
+
+    }
+
+    <span class="kw">return</span>  options-&gt;code_symbols-&gt;kind == Indented     ?   indent_blocks(blocks)   :
+            options-&gt;code_symbols-&gt;kind == Surrounded   ?   surround_blocks(blocks) :
+                                                            g_assert_no_match;
+}
+
+<span class="dt">char</span>* stringify(GQueue* blocks) {
+    GString* res = g_string_sized_new(<span class="dv">2048</span>);
+    g_queue_foreach(blocks, g_func(Block*, b,
+        g_string_append(res, extract(b));
+    ), NULL);
+    <span class="kw">return</span> g_strchug(res-&gt;str);
+}
+
+<span class="dt">void</span> deb(GQueue* q);
+
+<span class="dt">static</span>
+<span class="dt">char</span>* translate(Options* options, <span class="dt">char</span>* source) {
+    g_assert(options);
+    g_assert(source);
+
+    GQueue* blocks  = blockize(options, source);
+    blocks          = process_phases(options, blocks);
+    <span class="kw">return</span> stringify(blocks);
+}</code></pre>
+<h1 id="parsing-the-command-line"><a href="#TOC"><span class="header-section-number">11</span> Parsing the command line</a></h1>
+<p>In glib there is a command line parser that accept options in unix-like format and automatically produces professional <code>--help</code> messages and such. We shoudl really have something like this in .NET. Pheraps we do and I’m not aware of it?</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="kw">typedef</span> <span class="kw">struct</span> CmdOptions { <span class="dt">char</span>* input_file; <span class="dt">char</span>* output_file; Options* options;} CmdOptions;
+
+<span class="dt">static</span>
+CmdOptions* parse_command_line(<span class="dt">int</span> argc, <span class="dt">char</span>* argv[]);
+
+<span class="dt">static</span> <span class="dt">char</span> *no = NULL, *nc = NULL, *l = NULL, *co = NULL, *cc = NULL, *ou = NULL;
+<span class="dt">static</span> <span class="dt">char</span>** in_file;
+
+<span class="dt">static</span> <span class="dt">int</span> ind = <span class="dv">0</span>;
+<span class="dt">static</span> bool tests = false;
+
+<span class="co">// this is a bug in gcc, fixed in 2.7.0 not to moan about the final NULL</span>
+<span class="ot">#pragma GCC diagnostic push</span>
+<span class="ot">#pragma GCC diagnostic ignored &quot;-Wmissing-field-initializers&quot;</span>
+
+<span class="dt">static</span> GOptionEntry entries[] =
+{
+  { <span class="st">&quot;language&quot;</span>          , 'l', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;l , <span class="st">&quot;Language used&quot;</span>,                        <span class="st">&quot;L&quot;</span> },
+  { <span class="st">&quot;output&quot;</span>            , 'o', <span class="dv">0</span>, G_OPTION_ARG_FILENAME, &amp;ou, <span class="st">&quot;Defaults to the input file name with mkd extension&quot;</span>, <span class="st">&quot;FILE&quot;</span>},
+  { <span class="st">&quot;narrative-open&quot;</span>    , 'p', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;no, <span class="st">&quot;String opening a narrative comment&quot;</span>,   <span class="st">&quot;NO&quot;</span> },
+  { <span class="st">&quot;narrative-close&quot;</span>   , 'c', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;nc, <span class="st">&quot;String closing a narrative comment&quot;</span>,   <span class="st">&quot;NC&quot;</span> },
+  { <span class="st">&quot;code-open&quot;</span>         , 'P', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;co, <span class="st">&quot;String opening a code block&quot;</span>,          <span class="st">&quot;CO&quot;</span> },
+  { <span class="st">&quot;code-close&quot;</span>        , 'C', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;cc, <span class="st">&quot;String closing a code block&quot;</span>,          <span class="st">&quot;CC&quot;</span> },
+  { <span class="st">&quot;indent&quot;</span>            , 'i', <span class="dv">0</span>, G_OPTION_ARG_INT,    &amp;ind, <span class="st">&quot;Indent the code by N whitespaces&quot;</span>,    <span class="st">&quot;N&quot;</span> },
+  { <span class="st">&quot;run-tests&quot;</span>         , 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,   &amp;tests, <span class="st">&quot;Run all the testcases&quot;</span>,               NULL },
+  { G_OPTION_REMAINING  ,   <span class="dv">0</span>, <span class="dv">0</span>, G_OPTION_ARG_FILENAME_ARRAY, &amp;in_file, <span class="st">&quot;Input file to process&quot;</span>,      <span class="st">&quot;FILE&quot;</span> },
+  { NULL }
+};
+<span class="ot">#pragma GCC diagnostic pop</span></code></pre>
+<p>Brain damaged way to run tests with a <code>-t</code> hidden option. Not paying the code size price in release.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#ifndef NDEBUG</span>
+<span class="ot">#include &quot;tests.c&quot;</span>
+<span class="ot">#endif</span></code></pre>
+<p>Here is my big ass command parsing function. It could use a bit of refactoring …</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">void</span> destroy_arena_allocator();
+
+<span class="dt">static</span>
+CmdOptions* parse_command_line(<span class="dt">int</span> argc, <span class="dt">char</span>* argv[]) {
+
+    GError *error = NULL;
+    GOptionContext *context;
+
+    context = g_option_context_new (<span class="st">&quot;- translate source code with comemnts to an annotated file&quot;</span>);
+    g_option_context_add_main_entries (context, entries, NULL);
+    g_option_context_set_summary(context, summary(s_lang_params_table));
+
+    <span class="kw">if</span> (!g_option_context_parse (context, &amp;argc, &amp;argv, &amp;error))
+        report_error(<span class="st">&quot;option parsing failed: %s&quot;</span>, error-&gt;message);
+
+    CmdOptions* opt = g_new(CmdOptions, <span class="dv">1</span>);
+    opt-&gt;options = g_new(Options, <span class="dv">1</span>);
+
+    <span class="ot">#ifndef NDEBUG</span>
+    <span class="kw">if</span>(tests) {
+        <span class="dt">int</span> i = run_tests(argc, argv);
+        exit(i);
+    }
+    <span class="ot">#endif</span>
+
+    <span class="kw">if</span>(!in_file) report_error(<span class="st">&quot;No input file&quot;</span>);
+    opt-&gt;input_file = *in_file;
+
+    <span class="co">// Uses input file without extension, adding extension .mkd (assume markdown)</span>
+    opt-&gt;output_file = ou ? ou :  ({
+                                  <span class="dt">char</span>* output      = g_strdup(*in_file);
+                                  <span class="dt">char</span>* extension   = g_strrstr(output, <span class="st">&quot;.&quot;</span>);
+                                  extension ? ({
+                                               *extension = '\<span class="dv">0</span>';
+                                               g_strjoin(<span class="st">&quot;&quot;</span>, output, <span class="st">&quot;.mkd&quot;</span>, NULL);
+                                                }) :
+                                               g_strjoin(<span class="st">&quot;&quot;</span>, output, <span class="st">&quot;.mkd&quot;</span>, NULL);
+                                  });
+
+    <span class="kw">if</span>(l) { <span class="co">// user passed a language</span>
+        LangSymbols* lang = lang_find_symbols(s_lang_params_table, l);
+        <span class="kw">if</span>(!lang) report_error(<span class="st">&quot;%s is not a supported language&quot;</span>, l);
+
+        opt-&gt;options-&gt;start_narrative  = lang-&gt;start;
+        opt-&gt;options-&gt;end_narrative    = lang-&gt;end;
+
+    } <span class="kw">else</span> {
+        <span class="kw">if</span>(!no || !nc) report_error(<span class="st">&quot;You need to specify either -l, or both -p and -c&quot;</span>);
+
+        opt-&gt;options-&gt;start_narrative  = no;
+        opt-&gt;options-&gt;end_narrative    = nc;
+    }
+
+    <span class="kw">if</span>(ind) { <span class="co">// user pass    g_option_context_free();</span>
+        opt-&gt;options-&gt;code_symbols = union_new(CodeSymbols, Indented, .indentation = ind);
+    } <span class="kw">else</span> {
+        <span class="kw">if</span>(!co || !cc) report_error(<span class="st">&quot;You need to specify either -indent, or both -P and -C&quot;</span>);
+        opt-&gt;options-&gt;code_symbols = union_new(CodeSymbols, Surrounded, .start_code = co, .end_code = cc);
+    }
+
+    <span class="kw">return</span> opt;
+}</code></pre>
+<p>Some windows programs (i.e. notepad, VS, …) add a 3 bytes prelude to their utf-8 files, C doesn’t know anything about it, so you need to strip it. On this topic, I suspect the program works on UTF-8 files that contain non-ASCII chars, even if when I wrote it I didn’t know anything about localization.</p>
+<p>It should work because I’m just splitting the file when I see a certain ASCII string and in UTF-8 ASCII chars cannot appear anywhere else than in their ASCII position.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">char</span>* skip_utf8_bom(<span class="dt">char</span>* str) {
+    <span class="dt">unsigned</span> <span class="dt">char</span>* b = (<span class="dt">unsigned</span> <span class="dt">char</span>*) str;
+    <span class="kw">return</span>  b[<span class="dv">0</span>] == <span class="bn">0xEF</span> &amp;&amp; b[<span class="dv">1</span>] == <span class="bn">0xBB</span> &amp;&amp; b[<span class="dv">2</span>] == <span class="bn">0xBF</span>    ? (<span class="dt">char</span>*) &amp;b[<span class="dv">3</span>]  : <span class="co">// UTF-8</span>
+                                                              (<span class="dt">char</span>*) b;
+}</code></pre>
+<h1 id="not-freeing-memory-again"><a href="#TOC"><span class="header-section-number">12</span> Not freeing memory (again)</a></h1>
+<p>The reason I haven’t been freeing memory all along is because I was planning on using an arena allocator (a kind of linear allocator).</p>
+<p>Memory management is fully hortogonal to the style of programming described in this post. You can do it whatever way you prefer, but there is a certain affinity between an arena allocator (or garbage collection) and functional programming because of the temporary objects created in expressions. You could create the temporary objects explicitely, but that would diminish the conciseness of the paradigm.</p>
+<p>I have an arena allocator implementation <a href="https://github.com/lucabol/llib">here</a>. In the code below I comment it out so that you don’t have a dependency from that code if you want to try this. The program runs so quickly and it does so little that you can probably let the operating system reclame memory at the end of the process life.</p>
+<p>If you ended up integrating this with an editor (i.e. literate programming editing), you’d need to be more careful.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#ifdef ARENA</span>
+
+Arena_T the_arena;
+
+<span class="kw">inline</span> <span class="dt">static</span>
+gpointer arena_malloc(gsize n_bytes) {
+    <span class="kw">return</span> Arena_alloc(the_arena, n_bytes, __FILE__, __LINE__);
+}
+
+<span class="kw">inline</span> <span class="dt">static</span>
+gpointer arena_calloc(gsize n_blocks, gsize n_block_bytes) {
+    <span class="kw">return</span> Arena_calloc(the_arena, n_blocks, n_block_bytes, __FILE__, __LINE__);
+}
+
+<span class="kw">inline</span> <span class="dt">static</span>
+gpointer arena_realloc(gpointer mem, gsize n_bytes) {
+    <span class="kw">return</span> Arena_realloc(the_arena, mem, n_bytes, __FILE__, __LINE__);
+}
+
+<span class="dt">void</span> arena_free(G_GNUC_UNUSED gpointer mem) {
+    <span class="co">// NOP</span>
+}
+
+<span class="dt">void</span> set_arena_allocator() {
+    GMemVTable vt = (GMemVTable) { .malloc = arena_malloc,      .calloc = arena_calloc,
+                                   .realloc = arena_realloc,    .free = arena_free,
+                                   .try_malloc = arena_malloc,  .try_realloc = arena_realloc};
+    g_mem_set_vtable(&amp;vt);
+
+    the_arena = Arena_new();
+}
+
+<span class="dt">void</span> destroy_arena_allocator() {
+    Arena_dispose(&amp;the_arena);
+}
+
+<span class="ot">#endif</span>
+
+<span class="dt">int</span> main(<span class="dt">int</span> argc, <span class="dt">char</span>* argv[])
+{
+<span class="ot">#ifdef ARENA</span>
+    set_arena_allocator();
+<span class="ot">#endif</span>
+
+    CmdOptions* opt = parse_command_line(argc, argv);
+
+    <span class="dt">char</span>* source    = NULL;
+    GError* error   = NULL;
+
+    <span class="kw">if</span>(!g_file_get_contents(opt-&gt;input_file, &amp;source, NULL, &amp;error))
+        report_error(error-&gt;message);
+
+    source = skip_utf8_bom(source);
+
+    <span class="dt">char</span>* text              = translate(opt-&gt;options, source);
+
+    <span class="kw">if</span>(!g_file_set_contents(opt-&gt;output_file, text, -<span class="dv">1</span>, &amp;error))
+        report_error(error-&gt;message);
+
+<span class="ot">#ifdef ARENA</span>
+    destroy_arena_allocator();
+<span class="ot">#endif</span>
+
+    <span class="kw">return</span> <span class="dv">0</span>;
+}</code></pre>
+</body>
+</html>
