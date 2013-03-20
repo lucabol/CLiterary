@@ -8,9 +8,10 @@ Main ideas
 
 This is a port of [LLIte](https://github.com/lucabol/LLite/blob/master/Program.fs) in C. The reason for it is to
 experiment with writing functional code in standard C and compare the experience with using a functional language
-like F#
+like F#. It is in a way a continuation of [this](http://lucabolognese.wordpress.com/2013/01/11/functional-programming-in-c-implementation/)
+and [this](http://lucabolognese.wordpress.com/2013/01/04/functional-programming-in-c/) posts.
 
-I will be using glib and an header of convenient macros/functions to help me (lutils.h). I don't think that is cheating.
+I will be using [glib](https://developer.gnome.org/glib/) and an header of convenient macros/functions to help me (lutils.h). I don't think that is cheating.
 Any modern C praticoner has its bag of tricks ...
 
 Don't tell me this is not idiomatic C. I already know that.
@@ -738,7 +739,18 @@ void destroy_arena_allocator() {
 }
 
 #endif
+```
 
+Summary
+=======
+
+I have to say, it didn't feel too cumbersome to structure C code in a functional way, assuming that you can use GLib and
+a couple of GCC extensions to the language. It certainly doesn't have the problems that C++ has in terms of debugging STL failures.
+
+There are a couple of things I don't like about GLib and I'm working on an [hobby project](https://github.com/lucabol/llib)
+to overcome them. Eventually I'll post it.
+
+```c
 int main(int argc, char* argv[])
 {
 #ifdef ARENA

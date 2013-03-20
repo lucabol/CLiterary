@@ -53,11 +53,12 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#define-the-phases"><span class="toc-section-number">10</span> Define the phases</a></li>
 <li><a href="#parsing-the-command-line"><span class="toc-section-number">11</span> Parsing the command line</a></li>
 <li><a href="#not-freeing-memory-again"><span class="toc-section-number">12</span> Not freeing memory (again)</a></li>
+<li><a href="#summary"><span class="toc-section-number">13</span> Summary</a></li>
 </ul>
 </nav>
 <h1 id="main-ideas"><a href="#TOC"><span class="header-section-number">1</span> Main ideas</a></h1>
-<p>This is a port of <a href="https://github.com/lucabol/LLite/blob/master/Program.fs">LLIte</a> in C. The reason for it is to experiment with writing functional code in standard C and compare the experience with using a functional language like F#</p>
-<p>I will be using glib and an header of convenient macros/functions to help me (lutils.h). I don’t think that is cheating. Any modern C praticoner has its bag of tricks …</p>
+<p>This is a port of <a href="https://github.com/lucabol/LLite/blob/master/Program.fs">LLIte</a> in C. The reason for it is to experiment with writing functional code in standard C and compare the experience with using a functional language like F#. It is in a way a continuation of <a href="http://lucabolognese.wordpress.com/2013/01/11/functional-programming-in-c-implementation/">this</a> and <a href="http://lucabolognese.wordpress.com/2013/01/04/functional-programming-in-c/">this</a> posts.</p>
+<p>I will be using <a href="https://developer.gnome.org/glib/">glib</a> and an header of convenient macros/functions to help me (lutils.h). I don’t think that is cheating. Any modern C praticoner has its bag of tricks …</p>
 <p>Don’t tell me this is not idiomatic C. I already know that.</p>
 <pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#include &lt;string.h&gt;</span>
 <span class="ot">#include &lt;stdbool.h&gt;</span>
@@ -648,9 +649,11 @@ gpointer arena_realloc(gpointer mem, gsize n_bytes) {
     Arena_dispose(&amp;the_arena);
 }
 
-<span class="ot">#endif</span>
-
-<span class="dt">int</span> main(<span class="dt">int</span> argc, <span class="dt">char</span>* argv[])
+<span class="ot">#endif</span></code></pre>
+<h1 id="summary"><a href="#TOC"><span class="header-section-number">13</span> Summary</a></h1>
+<p>I have to say, it didn’t feel too cumbersome to structure C code in a functional way, assuming that you can use GLib and a couple of GCC extensions to the language. It certainly doesn’t have the problems that C++ has in terms of debugging STL failures.</p>
+<p>There are a couple of things I don’t like about GLib and I’m working on an <a href="https://github.com/lucabol/llib">hobby project</a> to overcome them. Eventually I’ll post it.</p>
+<pre class="sourceCode c"><code class="sourceCode c"><span class="dt">int</span> main(<span class="dt">int</span> argc, <span class="dt">char</span>* argv[])
 {
 <span class="ot">#ifdef ARENA</span>
     set_arena_allocator();
