@@ -177,19 +177,21 @@ GQueue* tokenize(Options* options, <span class="dt">char</span>* source) {
 
     <span class="kw">struct</span> tuple { <span class="dt">int</span> line; GString* acc; <span class="dt">char</span>* rem;};
 
-    bool is_opening(<span class="dt">char</span>* src)          { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;start_narrative);}
-    bool is_closing(<span class="dt">char</span>* src)          { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;end_narrative);}
-    <span class="dt">char</span>* remaining_open (<span class="dt">char</span>* src)    { <span class="kw">return</span> str_after_prefix(src, options-&gt;start_narrative);}
-    <span class="dt">char</span>* remaining_close(<span class="dt">char</span>* src)    { <span class="kw">return</span> str_after_prefix(src, options-&gt;end_narrative);}
+    bool is_opening(<span class="dt">char</span>* src)      { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;start_narrative);}
+    bool is_closing(<span class="dt">char</span>* src)      { <span class="kw">return</span> g_str_has_prefix(src, options-&gt;end_narrative);}
+    <span class="dt">char</span>* remaining_open (<span class="dt">char</span>* src){ <span class="kw">return</span> str_after_prefix(src, options-&gt;start_narrative);}
+    <span class="dt">char</span>* remaining_close(<span class="dt">char</span>* src){ <span class="kw">return</span> str_after_prefix(src, options-&gt;end_narrative);}
 
     <span class="kw">struct</span> tuple text(<span class="dt">char</span>* src, GString* acc, <span class="dt">int</span> line) {
-        <span class="kw">inline</span> <span class="kw">struct</span> tuple stop_parse_text() { <span class="kw">return</span> (<span class="kw">struct</span> tuple) {.line = line, .acc = acc, .rem = src};}
+        <span class="kw">inline</span> <span class="kw">struct</span> tuple stop_parse_text()
+            { <span class="kw">return</span> (<span class="kw">struct</span> tuple) {.line = line, .acc = acc, .rem = src};}
 
         <span class="kw">return</span>  str_empty (src)? stop_parse_text() :
                 is_opening(src)? stop_parse_text() :
                 is_closing(src)? stop_parse_text() :
                                 ({
-                                  <span class="dt">int</span> line2         = g_str_has_prefix(src, NL) ? line + <span class="dv">1</span> : line;
+                                  <span class="dt">int</span> line2         = g_str_has_prefix(src, NL) ? line + <span class="dv">1</span>
+                                                                                : line;
                                   GString* newAcc   = g_string_append_c(acc, *src);
                                   <span class="dt">char</span>* rem         = src + <span class="dv">1</span>;
                                   text(rem, newAcc, line2);
@@ -199,15 +201,18 @@ GQueue* tokenize(Options* options, <span class="dt">char</span>* source) {
     GQueue* tokenize_rec(<span class="dt">char</span>* src, GQueue* acc, <span class="dt">int</span> line) {
         <span class="kw">return</span>  str_empty(src)  ?   acc                     :
                 is_opening(src) ?   tokenize_rec(remaining_open(src),
-                                               g_queue_push_back(acc, union_new(Token, OpenComment, .line = line)),
-                                               line)        :
+                                        g_queue_push_back(acc, union_new(
+                                                    Token, OpenComment, .line = line)),
+                                        line)        :
                 is_closing(src) ?   tokenize_rec(remaining_close(src),
-                                               g_queue_push_back(acc, union_new(Token, CloseComment, .line = line)),
-                                               line)        :
+                                               g_queue_push_back(acc, union_new(
+                                                    Token, CloseComment, .line = line)),
+                                        line)        :
                                 ({
                                     <span class="kw">struct</span> tuple t = text(src, g_string_sized_new(<span class="dv">200</span>), line);
                                     tokenize_rec(t.rem,
-                                        g_queue_push_back(acc, union_new(Token, Text, .text = t.acc-&gt;str)), t.line);
+                                        g_queue_push_back(acc, union_new(
+                                                    Token, Text, .text = t.acc-&gt;str)), t.line);
                                  });
     }
 
@@ -231,7 +236,8 @@ GQueue* parse(Options* options, GQueue* tokens) {
 
     <span class="kw">struct</span> tuple { GQueue* acc; GQueue* rem;};
 
-    <span class="ot">#define error(...) ({ report_error(__VA_ARGS__); (struct tuple) {.acc = NULL, .rem = NULL}; })</span>
+    <span class="ot">#define error(...) \</span>
+        ({ report_error(__VA_ARGS__); (<span class="kw">struct</span> tuple) {.acc = NULL, .rem = NULL}; })
 
     <span class="kw">struct</span> tuple parse_narrative(GQueue* acc, GQueue* rem) {
 
@@ -239,11 +245,13 @@ GQueue* parse(Options* options, GQueue* tokens) {
         Token* h        = g_queue_pop_head(rem);
         GQueue* t       = rem;
 
-        <span class="kw">return</span>  isEmpty                 ? error(<span class="st">&quot;You haven't closed your last narrative comment&quot;</span>)   :
+        <span class="kw">return</span>  isEmpty                 ?
+                                    error(<span class="st">&quot;You haven't closed your last narrative comment&quot;</span>) :
                 h-&gt;kind == OpenComment  ?
-                    error(<span class="st">&quot;Don't open narrative comments inside narrative comments at line %i&quot;</span>, h-&gt;OpenComment.line) :
-                h-&gt;kind == CloseComment ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}                     :
-                h-&gt;kind == Text         ? parse_narrative(g_queue_push_back(acc, h), t)             :
+                    error(<span class="st">&quot;Don't open narrative comments inside narrative comments at line %i&quot;</span>,
+                          h-&gt;OpenComment.line)                                              :
+                h-&gt;kind == CloseComment ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}             :
+                h-&gt;kind == Text         ? parse_narrative(g_queue_push_back(acc, h), t)     :
                                           error(<span class="st">&quot;Should never get here&quot;</span>);
     };
 
@@ -253,10 +261,11 @@ GQueue* parse(Options* options, GQueue* tokens) {
         Token* h    = g_queue_pop_head(rem);
         GQueue* t   = rem;
 
-        <span class="kw">return</span>  isEmpty                 ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}                             :
-                h-&gt;kind == OpenComment  ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = g_queue_push_front(rem, h)}    :
-                h-&gt;kind == CloseComment ? parse_code(g_queue_push_back(acc, h), rem)                        :
-                h-&gt;kind == Text         ? parse_code(g_queue_push_back(acc, h), rem)                        :
+        <span class="kw">return</span>  isEmpty                 ? (<span class="kw">struct</span> tuple) {.acc = acc, .rem = t}         :
+                h-&gt;kind == OpenComment  ?
+                    (<span class="kw">struct</span> tuple) {.acc = acc, .rem = g_queue_push_front(rem, h)}      :
+                h-&gt;kind == CloseComment ? parse_code(g_queue_push_back(acc, h), rem)    :
+                h-&gt;kind == Text         ? parse_code(g_queue_push_back(acc, h), rem)    :
                                           error(<span class="st">&quot;Should never get here&quot;</span>);
     };
     <span class="ot">#undef error</span>
@@ -267,22 +276,29 @@ GQueue* parse(Options* options, GQueue* tokens) {
         Token* h    = g_queue_pop_head(rem);
         GQueue* t   = rem;
 
-        <span class="kw">return</span>  isEmpty                 ? acc                                                               :
+        <span class="kw">return</span>  isEmpty                 ? acc                                           :
                 h-&gt;kind == OpenComment  ? ({
                                            GQueue* emp = g_queue_new();
                                            <span class="kw">struct</span> tuple tu = parse_narrative(emp, t);
-                                           Chunk* ch = union_new(Chunk, NarrativeChunk, .tokens = tu.acc );
+                                           Chunk* ch = union_new(
+                                                Chunk, NarrativeChunk, .tokens = tu.acc );
                                            GQueue* newQ = g_queue_push_back(acc, ch);
                                            parse_rec(newQ, tu.rem);
-                                           })                                                              :
-                h-&gt;kind == CloseComment ? report_error_e(<span class="st">&quot;Don't insert a close narrative comment at the start of your program at line %i&quot;</span>,
-                                                h-&gt;OpenComment.line)                                        :
+                                           })                                            :
+                h-&gt;kind == CloseComment ?
+                    report_error_e(
+                        <span class="st">&quot;Don't insert a close narrative comment at the start of your&quot;</span>
+                        <span class="st">&quot; program at line %i&quot;</span>,
+                                            h-&gt;OpenComment.line)                         :
                 h-&gt;kind == Text         ?
                                         ({
                                            GQueue* emp = g_queue_new();
-                                           <span class="kw">struct</span> tuple tu = parse_code(g_queue_push_front(emp, h), t);
-                                           parse_rec(g_queue_push_back(acc, union_new(Chunk, CodeChunk, .tokens = tu.acc )),
-                                                     tu.rem);
+                                           <span class="kw">struct</span> tuple tu =
+                                                parse_code(g_queue_push_front(emp, h), t);
+                                           parse_rec(g_queue_push_back
+                                            (acc,
+                                             union_new(Chunk, CodeChunk, .tokens = tu.acc)),
+                                             tu.rem);
                                           })                                                               :
                                           g_assert_no_match;
     }
@@ -292,9 +308,10 @@ GQueue* parse(Options* options, GQueue* tokens) {
 <h1 id="flattener"><a href="#TOC"><span class="header-section-number">9</span> Flattener</a></h1>
 <p>This follows the usual practice of representing fold as foreach statments (and maps to). Pheraps I shall build better abstractions for them at some point. I also introduce a little macro to simplify writing of GFunc lambdas, given how pervasive they are.</p>
 <p>Again, note how heavy ternary operated this is …</p>
-<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_func_z(type, name, ...) lambda(void, (void* private_it, G_GNUC_UNUSED void* private_no){       \</span>
-                                       type name = private_it;                                         \
-                                       __VA_ARGS__                                                     \
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_func_z(type, name, ...) lambda(void,                                              \</span>
+                                        (<span class="dt">void</span>* private_it, G_GNUC_UNUSED <span class="dt">void</span>* private_no){ \
+                                       type name = private_it;                              \
+                                       __VA_ARGS__                                          \
                                 })
 
 <span class="dt">static</span>
@@ -302,17 +319,20 @@ GQueue* flatten(Options* options, GQueue* chunks) {
     GString* token_to_string_narrative(Token* tok) {
         <span class="kw">return</span>  tok-&gt;kind == OpenComment ||
                 tok-&gt;kind == CloseComment   ?
-                    report_error_e(<span class="st">&quot;Cannot nest narrative comments at line %i&quot;</span>, tok-&gt;OpenComment.line)   :
-                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                          :
+                    report_error_e(<span class="st">&quot;Cannot nest narrative comments at line %i&quot;</span>,
+                                   tok-&gt;OpenComment.line)                                   :
+                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                  :
                                               g_assert_no_match;
     }
     GString* token_to_string_code(Token* tok) {
         <span class="kw">return</span>  tok-&gt;kind == OpenComment    ?
-                    report_error_e(<span class="st">&quot;Open narrative comment cannot be in code at line %i. Pheraps you have an open comment &quot;</span>
-                              <span class="st">&quot;in a code string before this comment tag?&quot;</span>
-                              , tok-&gt;OpenComment.line)                                              :
-                tok-&gt;kind == CloseComment   ? g_string_new(options-&gt;end_narrative)                  :
-                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                          :
+                report_error_e(
+                    <span class="st">&quot;Open narrative comment cannot be in code at line %i.&quot;</span>
+                    <span class="st">&quot; Pheraps you have an open comment &quot;</span>
+                    <span class="st">&quot;in a code string before this comment tag?&quot;</span>
+                    , tok-&gt;OpenComment.line)                                                :
+                tok-&gt;kind == CloseComment   ? g_string_new(options-&gt;end_narrative)          :
+                tok-&gt;kind == Text           ? g_string_new(tok-&gt;Text.text)                  :
                                               g_assert_no_match;
     }
     Block* flatten_chunk(Chunk* ch) {
@@ -320,16 +340,20 @@ GQueue* flatten(Options* options, GQueue* chunks) {
                                GQueue* tokens = ch-&gt;NarrativeChunk.tokens;
                                GString* res = g_string_sized_new(<span class="dv">256</span>);
                                g_queue_foreach(tokens, g_func(Token*, tok,
-                                                              g_string_append(res, token_to_string_narrative(tok)-&gt;str);
-                                                              ), NULL);
+                                                g_string_append(
+                                                    res,
+                                                    token_to_string_narrative(tok)-&gt;str);
+                                                ), NULL);
                                union_new(Block, Narrative, .narrative = res-&gt;str);
                                                })   :
                 ch-&gt;kind == CodeChunk       ? ({
                                GQueue* tokens = ch-&gt;CodeChunk.tokens;
                                GString* res = g_string_sized_new(<span class="dv">256</span>);
                                g_queue_foreach(tokens, g_func(Token*, tok,
-                                                              g_string_append(res, token_to_string_code(tok)-&gt;str);
-                                                              ), NULL);
+                                                        g_string_append(
+                                                            res,
+                                                            token_to_string_code(tok)-&gt;str);
+                                                        ), NULL);
                                union_new(Block, Code, .code = res-&gt;str);
                                                })   :
                                g_assert_no_match;
@@ -403,17 +427,21 @@ GQueue* merge_blocks(G_GNUC_UNUSED Options*options, GQueue* blocks) {
                  Block* h1 = g_queue_pop_head(blocks);
                  Block* h2 = g_queue_pop_head(blocks);
                  h1-&gt;kind == Code &amp;&amp; h2-&gt;kind == Code ? ({
-                     <span class="dt">char</span>* newCode = g_strjoin(<span class="st">&quot;&quot;</span>, h1-&gt;Code.code, NL, h2-&gt;Code.code, NULL);
+                     <span class="dt">char</span>* newCode =
+                        g_strjoin(<span class="st">&quot;&quot;</span>, h1-&gt;Code.code, NL, h2-&gt;Code.code, NULL);
                      Block* b = union_new(Block, Code, .code = newCode);
                      merge_blocks(options, g_queue_push_front(blocks, b));
                                                          })         :
                  h1-&gt;kind == Narrative &amp;&amp; h2-&gt;kind == Narrative ? ({
-                     <span class="dt">char</span>* newNarr = g_strjoin(<span class="st">&quot;&quot;</span>, h1-&gt;Narrative.narrative, NL, h2-&gt;Narrative.narrative, NULL);
+                     <span class="dt">char</span>* newNarr =
+                        g_strjoin(
+                            <span class="st">&quot;&quot;</span>, h1-&gt;Narrative.narrative, NL, h2-&gt;Narrative.narrative, NULL);
                      Block* b = union_new(Block, Narrative, .narrative = newNarr);
                      merge_blocks(options, g_queue_push_front(blocks, b));
                                                          })         :
                                                          ({
-                     GQueue* newBlocks = merge_blocks(options, g_queue_push_front(blocks, h2));
+                     GQueue* newBlocks =
+                        merge_blocks(options, g_queue_push_front(blocks, h2));
                      g_queue_push_front(newBlocks, h1);
                                                          });
                  });
@@ -442,13 +470,13 @@ gint g_asprintf_z(gchar** string, gchar <span class="dt">const</span> *format, .
     <span class="kw">return</span> g_strjoinv(withNl, g_strsplit(tmp, NL, -<span class="dv">1</span>));
 }</code></pre>
 <p>And finally I ended up defining map. See if you like how the usage looks in the function below.</p>
-<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_queue_map_z(q, type, name, ...) ({                                                                     \</span>
-        GQueue* private_res = g_queue_new();                                                                   \
-        g_queue_foreach(q, g_func(type, name,                                                                   \
-            name = __VA_ARGS__;                                                                                 \
-            g_queue_push_tail(private_res, name);                                                               \
-            ), NULL);                                                                                           \
-        private_res;                                                                                            \
+<pre class="sourceCode c"><code class="sourceCode c"><span class="ot">#define g_queue_map_z(q, type, name, ...) ({                                \</span>
+        GQueue* private_res = g_queue_new();                                \
+        g_queue_foreach(q, g_func(type, name,                               \
+            name = __VA_ARGS__;                                             \
+            g_queue_push_tail(private_res, name);                           \
+            ), NULL);                                                       \
+        private_res;                                                        \
                                       })
 
 <span class="dt">static</span>
@@ -457,24 +485,27 @@ GQueue* add_code_tags(Options* options, GQueue* blocks) {
     GQueue* indent_blocks(GQueue* blocks) {
         <span class="kw">return</span> g_queue_map(blocks, Block*, b,
                 b-&gt;kind == Narrative ? b                                                                                                    :
-                b-&gt;kind == Code      ? union_new(Block, Code, .code = indent(options-&gt;code_symbols-&gt;Indented.indentation, b-&gt;Code.code))    :
-                                       g_assert_no_match;);
+                b-&gt;kind == Code      ?
+                    union_new(Block, Code, .code =
+                        indent(options-&gt;code_symbols-&gt;Indented.indentation, b-&gt;Code.code))    :
+                    g_assert_no_match;);
     }
 
     GQueue* surround_blocks(GQueue* blocks) {
         <span class="kw">return</span> g_queue_map(blocks, Block*, b,
                 b-&gt;kind == Narrative ?
-                    union_new(Block, Narrative, .narrative = g_strjoin(<span class="st">&quot;&quot;</span>, NL, g_strstrip(b-&gt;Narrative.narrative), NL, NULL))   :
+                    union_new(Block, Narrative, .narrative =
+                        g_strjoin(<span class="st">&quot;&quot;</span>, NL, g_strstrip(b-&gt;Narrative.narrative), NL, NULL))   :
                 b-&gt;kind == Code      ?
                     union_new(Block, Code, .code = g_strjoin(<span class="st">&quot;&quot;</span>,
-                                                             NL,
-                                                             options-&gt;code_symbols-&gt;Surrounded.start_code,
-                                                             NL,
-                                                             g_strstrip(b-&gt;Code.code),
-                                                             NL,
-                                                             options-&gt;code_symbols-&gt;Surrounded.end_code,
-                                                             NL,
-                                                             NULL))    :
+                                                 NL,
+                                                 options-&gt;code_symbols-&gt;Surrounded.start_code,
+                                                 NL,
+                                                 g_strstrip(b-&gt;Code.code),
+                                                 NL,
+                                                 options-&gt;code_symbols-&gt;Surrounded.end_code,
+                                                 NL,
+                                                 NULL))    :
                                        g_assert_no_match;);
 
     }
@@ -522,15 +553,24 @@ CmdOptions* parse_command_line(<span class="dt">int</span> argc, <span class="dt
 
 <span class="dt">static</span> GOptionEntry entries[] =
 {
-  { <span class="st">&quot;language&quot;</span>          , 'l', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;l , <span class="st">&quot;Language used&quot;</span>,                        <span class="st">&quot;L&quot;</span> },
-  { <span class="st">&quot;output&quot;</span>            , 'o', <span class="dv">0</span>, G_OPTION_ARG_FILENAME, &amp;ou, <span class="st">&quot;Defaults to the input file name with mkd extension&quot;</span>, <span class="st">&quot;FILE&quot;</span>},
-  { <span class="st">&quot;narrative-open&quot;</span>    , 'p', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;no, <span class="st">&quot;String opening a narrative comment&quot;</span>,   <span class="st">&quot;NO&quot;</span> },
-  { <span class="st">&quot;narrative-close&quot;</span>   , 'c', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;nc, <span class="st">&quot;String closing a narrative comment&quot;</span>,   <span class="st">&quot;NC&quot;</span> },
-  { <span class="st">&quot;code-open&quot;</span>         , 'P', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;co, <span class="st">&quot;String opening a code block&quot;</span>,          <span class="st">&quot;CO&quot;</span> },
-  { <span class="st">&quot;code-close&quot;</span>        , 'C', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;cc, <span class="st">&quot;String closing a code block&quot;</span>,          <span class="st">&quot;CC&quot;</span> },
-  { <span class="st">&quot;indent&quot;</span>            , 'i', <span class="dv">0</span>, G_OPTION_ARG_INT,    &amp;ind, <span class="st">&quot;Indent the code by N whitespaces&quot;</span>,    <span class="st">&quot;N&quot;</span> },
-  { <span class="st">&quot;run-tests&quot;</span>         , 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,   &amp;tests, <span class="st">&quot;Run all the testcases&quot;</span>,               NULL },
-  { G_OPTION_REMAINING  ,   <span class="dv">0</span>, <span class="dv">0</span>, G_OPTION_ARG_FILENAME_ARRAY, &amp;in_file, <span class="st">&quot;Input file to process&quot;</span>,      <span class="st">&quot;FILE&quot;</span> },
+  { <span class="st">&quot;language&quot;</span>          , 'l', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;l ,
+                                <span class="st">&quot;Language used&quot;</span>, <span class="st">&quot;L&quot;</span>  },
+  { <span class="st">&quot;output&quot;</span>            , 'o', <span class="dv">0</span>, G_OPTION_ARG_FILENAME, &amp;ou,
+                                <span class="st">&quot;Defaults to the input file name with mkd extension&quot;</span>, <span class="st">&quot;FILE&quot;</span> },
+  { <span class="st">&quot;narrative-open&quot;</span>    , 'p', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;no,
+                                <span class="st">&quot;String opening a narrative comment&quot;</span>,   <span class="st">&quot;NO&quot;</span> },
+  { <span class="st">&quot;narrative-close&quot;</span>   , 'c', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;nc,
+                                <span class="st">&quot;String closing a narrative comment&quot;</span>,   <span class="st">&quot;NC&quot;</span> },
+  { <span class="st">&quot;code-open&quot;</span>         , 'P', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;co,
+                                <span class="st">&quot;String opening a code block&quot;</span>,          <span class="st">&quot;CO&quot;</span> },
+  { <span class="st">&quot;code-close&quot;</span>        , 'C', <span class="dv">0</span>, G_OPTION_ARG_STRING, &amp;cc,
+                                <span class="st">&quot;String closing a code block&quot;</span>,          <span class="st">&quot;CC&quot;</span> },
+  { <span class="st">&quot;indent&quot;</span>            , 'i', <span class="dv">0</span>, G_OPTION_ARG_INT,    &amp;ind,
+                                <span class="st">&quot;Indent the code by N whitespaces&quot;</span>,    <span class="st">&quot;N&quot;</span>  },
+  { <span class="st">&quot;run-tests&quot;</span>         , 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,   &amp;tests,
+                                <span class="st">&quot;Run all the testcases&quot;</span>, NULL },
+  { G_OPTION_REMAINING  ,   <span class="dv">0</span>, <span class="dv">0</span>, G_OPTION_ARG_FILENAME_ARRAY, &amp;in_file,
+                                <span class="st">&quot;Input file to process&quot;</span>,   <span class="st">&quot;FILE&quot;</span> },
   { NULL }
 };
 <span class="ot">#pragma GCC diagnostic pop</span></code></pre>
@@ -547,7 +587,8 @@ CmdOptions* parse_command_line(<span class="dt">int</span> argc, <span class="dt
     GError *error = NULL;
     GOptionContext *context;
 
-    context = g_option_context_new (<span class="st">&quot;- translate source code with comemnts to an annotated file&quot;</span>);
+    context =
+        g_option_context_new (<span class="st">&quot;- translate source code with comemnts to an annotated file&quot;</span>);
     g_option_context_add_main_entries (context, entries, NULL);
     g_option_context_set_summary(context, summary(s_lang_params_table));
 
@@ -596,7 +637,8 @@ CmdOptions* parse_command_line(<span class="dt">int</span> argc, <span class="dt
         opt-&gt;options-&gt;code_symbols = union_new(CodeSymbols, Indented, .indentation = ind);
     } <span class="kw">else</span> {
         <span class="kw">if</span>(!co || !cc) report_error(<span class="st">&quot;You need to specify either -indent, or both -P and -C&quot;</span>);
-        opt-&gt;options-&gt;code_symbols = union_new(CodeSymbols, Surrounded, .start_code = co, .end_code = cc);
+        opt-&gt;options-&gt;code_symbols =
+            union_new(CodeSymbols, Surrounded, .start_code = co, .end_code = cc);
     }
 
     <span class="kw">return</span> opt;
